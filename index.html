@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Edit — Outfit Lookbook</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#211F1C">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    box-sizing: border-box;
+    --bg: #EDE9E1;
+    --surface: #FFFFFF;
+    --surface-2: #F5F2EC;
+    --ink: #211F1C;
+    --ink-soft: #6B665C;
+    --line: rgba(33,31,28,0.14);
+    --line-strong: rgba(33,31,28,0.28);
+    --own: #2F4538;
+    --own-bg: rgba(47,69,56,0.10);
+    --buy: #A5732C;
+    --buy-bg: rgba(165,115,44,0.12);
+    --pin-ring: rgba(255,255,255,0.9);
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-body: 'Inter', -apple-system, sans-serif;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #171613;
+      --surface: #211F1C;
+      --surface-2: #29271F;
+      --ink: #ECE7DD;
+      --ink-soft: #A9A296;
+      --line: rgba(236,231,221,0.14);
+      --line-strong: rgba(236,231,221,0.30);
+      --own: #7FA98C;
+      --own-bg: rgba(127,169,140,0.14);
+      --buy: #D6A85C;
+      --buy-bg: rgba(214,168,92,0.14);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #171613;
+    --surface: #211F1C;
+    --surface-2: #29271F;
+    --ink: #ECE7DD;
+    --ink-soft: #A9A296;
+    --line: rgba(236,231,221,0.14);
+    --line-strong: rgba(236,231,221,0.30);
+    --own: #7FA98C;
+    --own-bg: rgba(127,169,140,0.14);
+    --buy: #D6A85C;
+    --buy-bg: rgba(214,168,92,0.14);
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100%;
+  }
+  a { color: inherit; }
+
+  .app { max-width: 900px; margin: 0 auto; padding: 28px 20px 80px; }
+
+  header.top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+  header.top .mark {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 26px;
+    letter-spacing: 0.01em;
+  }
+  header.top .mark .dot { color: var(--buy); }
+  header.top p.sub {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: var(--ink-soft);
+    max-width: 30ch;
+  }
+
+  nav.tabs {
+    display: inline-flex;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 2px;
+    background: var(--surface);
+  }
+  nav.tabs button {
+    border: none;
+    background: transparent;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    padding: 7px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  nav.tabs button.active {
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  .filter-bar {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 18px;
+    padding: 10px 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .filter-bar.show { display: flex; }
+  .filter-bar strong { font-weight: 600; }
+  .filter-bar button {
+    margin-left: auto;
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 12px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: var(--font-body);
+  }
+
+  /* ---- Board ---- */
+  .board {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 14px;
+  }
+  .card {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    aspect-ratio: 3/4;
+  }
+  .card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .card .badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(23,22,19,0.72);
+    color: #fff;
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-family: var(--font-body);
+  }
+  .card.dimmed { opacity: 0.28; }
+  .card.matched { outline: 2px solid var(--buy); outline-offset: -2px; }
+  .card .scenarios {
+    position: absolute;
+    left: 8px;
+    bottom: 8px;
+    right: 8px;
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .card .scenarios span {
+    background: rgba(255,255,255,0.88);
+    color: #211F1C;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 999px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .add-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: transparent;
+    border: 1.5px dashed var(--line-strong);
+    border-radius: 4px;
+    aspect-ratio: 3/4;
+    cursor: pointer;
+    color: var(--ink-soft);
+    font-family: var(--font-body);
+    font-size: 12.5px;
+  }
+  .add-card .plus { font-family: var(--font-display); font-size: 28px; line-height: 1; color: var(--ink); }
+
+  .empty {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 14px;
+  }
+  .empty .big { font-family: var(--font-display); font-size: 20px; color: var(--ink); margin-bottom: 6px; }
+
+  /* ---- Wardrobe list ---- */
+  .wlist { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+  .witem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 4px;
+    border-bottom: 1px solid var(--line);
+  }
+  .witem .name-btn {
+    background: none;
+    border: none;
+    text-align: left;
+    font-family: var(--font-display);
+    font-size: 16.5px;
+    color: var(--ink);
+    cursor: pointer;
+    padding: 0;
+    flex: 1;
+    min-width: 0;
+  }
+  .witem .count {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--ink-soft);
+    display: block;
+    margin-top: 2px;
+  }
+  .status-toggle {
+    display: inline-flex;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .status-toggle button {
+    border: none;
+    background: var(--surface);
+    font-family: var(--font-body);
+    font-size: 11.5px;
+    font-weight: 500;
+    padding: 6px 11px;
+    cursor: pointer;
+    color: var(--ink-soft);
+  }
+  .status-toggle button.own.on { background: var(--own-bg); color: var(--own); }
+  .status-toggle button.buy.on { background: var(--buy-bg); color: var(--buy); }
+  .witem .del {
+    border: none;
+    background: none;
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-size: 15px;
+    padding: 4px 6px;
+    flex-shrink: 0;
+  }
+  .witem .pick {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--line-strong);
+    border-radius: 4px;
+    flex-shrink: 0;
+    cursor: pointer;
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--bg);
+  }
+  .witem .pick.on { background: var(--ink); border-color: var(--ink); }
+
+  .selectbar {
+    position: sticky;
+    bottom: env(safe-area-inset-bottom, 0px);
+    display: none;
+    align-items: center;
+    gap: 10px;
+    background: var(--ink);
+    color: var(--bg);
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-top: 12px;
+    font-size: 13px;
+  }
+  .selectbar.show { display: flex; }
+  .selectbar .mode-toggle { display: inline-flex; border: 1px solid rgba(255,255,255,0.3); border-radius: 999px; overflow: hidden; margin-left: auto; }
+  .selectbar .mode-toggle button { border: none; background: none; color: var(--bg); font-size: 11.5px; padding: 5px 10px; cursor: pointer; opacity: 0.6; font-family: var(--font-body); }
+  .selectbar .mode-toggle button.on { opacity: 1; background: rgba(255,255,255,0.16); }
+  .selectbar button.view {
+    border: none;
+    background: var(--buy);
+    color: #211F1C;
+    font-weight: 600;
+    font-size: 12.5px;
+    padding: 7px 13px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: var(--font-body);
+  }
+
+  .scenario-editor {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 12px 16px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+  .scenario-editor .chip {
+    background: rgba(255,255,255,0.12);
+    color: #F5F2EC;
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .scenario-editor .chip button { border: none; background: none; color: #F5F2EC; opacity: 0.6; cursor: pointer; font-size: 11px; padding: 0; }
+  .scenario-editor input {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 999px;
+    color: #F5F2EC;
+    font-size: 12px;
+    padding: 5px 12px;
+    width: 130px;
+    font-family: var(--font-body);
+  }
+  .scenario-editor input::placeholder { color: #C9C4B8; }
+
+  /* ---- Detail overlay ---- */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15,14,12,0.86);
+    display: none;
+    z-index: 40;
+    padding: env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
+  }
+  .overlay.show { display: flex; flex-direction: column; }
+  .overlay-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    flex-shrink: 0;
+  }
+  .overlay-head .hint { color: #D8D3C8; font-size: 12.5px; }
+  .overlay-head button {
+    border: none;
+    background: rgba(255,255,255,0.12);
+    color: #F5F2EC;
+    font-size: 13px;
+    padding: 7px 13px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: var(--font-body);
+  }
+  .stage-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+    padding: 0 12px;
+  }
+  .stage {
+    position: relative;
+    max-width: 100%;
+    max-height: 78vh;
+    line-height: 0;
+  }
+  .stage img { max-width: 100%; max-height: 78vh; display: block; cursor: crosshair; border-radius: 2px; }
+  .pin {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    margin-left: -7px;
+    margin-top: -7px;
+    border-radius: 50%;
+    background: var(--buy);
+    border: 2px solid var(--pin-ring);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    cursor: pointer;
+  }
+  .pin.owned { background: var(--own); }
+  .pin.pulse { animation: pulse 1.1s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{ transform: scale(1); } 50%{ transform: scale(1.5); } }
+
+  .taglabel {
+    position: absolute;
+    transform: translate(-50%, -130%);
+    background: rgba(23,22,19,0.86);
+    color: #fff;
+    font-size: 11.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .popover {
+    position: absolute;
+    z-index: 5;
+    background: var(--surface);
+    border-radius: 6px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    padding: 10px;
+    width: 200px;
+  }
+  .popover input {
+    width: 100%;
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+    padding: 8px 9px;
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    color: var(--ink);
+    background: var(--surface);
+  }
+  .popover .row { display: flex; gap: 6px; margin-top: 8px; }
+  .popover button {
+    font-family: var(--font-body);
+    font-size: 12px;
+    border-radius: 4px;
+    border: 1px solid var(--line-strong);
+    background: var(--surface-2);
+    padding: 6px 10px;
+    cursor: pointer;
+    color: var(--ink);
+  }
+  .popover button.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); flex: 1; }
+  .popover .existing {
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+  .popover .del-tag { color: #A5432C; border-color: transparent; background: none; padding: 4px 0; }
+
+  footer.remove-photo {
+    text-align: center;
+    padding: 10px 0 4px;
+  }
+  footer.remove-photo button {
+    border: none;
+    background: none;
+    color: #C9B9A6;
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  input[type=file] { display: none; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div>
+      <div class="mark">the edit<span class="dot">.</span></div>
+      <p class="sub" id="subline">Tag every item, then pull up every look it's in.</p>
+    </div>
+    <nav class="tabs">
+      <button id="tabBoard" class="active">Board</button>
+      <button id="tabWardrobe">Wardrobe</button>
+      <button id="tabScenarios">Scenarios</button>
+    </nav>
+  </header>
+
+  <div class="filter-bar" id="filterBar">
+    <span>Showing looks with <strong id="filterName"></strong></span>
+    <button id="clearFilter">Clear</button>
+  </div>
+
+  <section id="boardView"></section>
+  <section id="wardrobeView" style="display:none;"></section>
+  <section id="scenariosView" style="display:none;"></section>
+</div>
+
+<input type="file" id="fileInput" accept="image/*" multiple>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-head">
+    <span class="hint">Tap the photo to drop a pin</span>
+    <button id="closeOverlay">Done</button>
+  </div>
+  <div class="stage-wrap">
+    <div class="stage" id="stage">
+      <img id="stageImg" src="">
+    </div>
+  </div>
+  <div class="scenario-editor" id="scenarioEditor"></div>
+  <footer class="remove-photo"><button id="removePhoto">Remove this photo</button></footer>
+</div>
+
+<script>
+(function(){
+  var DB_NAME = 'the-edit-lookbook';
+  var OLD_KEY = 'the-edit-lookbook-v1'; // previous localStorage version, migrated on first run
+  var data = { photos: [], items: [], scenarios: [] };
+  var dbReady = null;
+
+  function openDB(){
+    if (dbReady) return dbReady;
+    dbReady = new Promise(function(resolve, reject){
+      if (!('indexedDB' in window)) { reject(new Error('no indexeddb')); return; }
+      var req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = function(e){
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains('photos')) db.createObjectStore('photos', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta', { keyPath: 'key' });
+      };
+      req.onsuccess = function(){ resolve(req.result); };
+      req.onerror = function(){ reject(req.error); };
+    });
+    return dbReady;
+  }
+  function idbGetAll(store){
+    return openDB().then(function(db){
+      return new Promise(function(resolve, reject){
+        var req = db.transaction(store, 'readonly').objectStore(store).getAll();
+        req.onsuccess = function(){ resolve(req.result); };
+        req.onerror = function(){ reject(req.error); };
+      });
+    });
+  }
+  function idbPut(store, value){
+    return openDB().then(function(db){
+      return new Promise(function(resolve, reject){
+        var tx = db.transaction(store, 'readwrite');
+        tx.objectStore(store).put(value);
+        tx.oncomplete = function(){ resolve(); };
+        tx.onerror = function(){ reject(tx.error); };
+      });
+    });
+  }
+  function idbDelete(store, key){
+    return openDB().then(function(db){
+      return new Promise(function(resolve, reject){
+        var tx = db.transaction(store, 'readwrite');
+        tx.objectStore(store).delete(key);
+        tx.oncomplete = function(){ resolve(); };
+        tx.onerror = function(){ reject(tx.error); };
+      });
+    });
+  }
+  function onSaveError(e){
+    console.error(e);
+    alert('Could not save that change — your device storage may be full.');
+  }
+
+  function saveMeta(){ idbPut('meta', { key: 'app', items: data.items, scenarios: data.scenarios }).catch(onSaveError); }
+  function savePhoto(p){ idbPut('photos', p).catch(onSaveError); }
+  function deletePhotoRecord(id){ idbDelete('photos', id).catch(onSaveError); }
+  function persistAllPhotos(){ data.photos.forEach(savePhoto); }
+
+  function migrateFromLocalStorage(){
+    var raw;
+    try { raw = localStorage.getItem(OLD_KEY); } catch(e) { return Promise.resolve(); }
+    if (!raw) return Promise.resolve();
+    var old;
+    try { old = JSON.parse(raw); } catch(e) { return Promise.resolve(); }
+    if (!old || !old.photos) return Promise.resolve();
+    var now = Date.now();
+    var puts = old.photos.map(function(p, idx){
+      p.addedAt = now - idx;
+      if (!p.scenarioIds) p.scenarioIds = [];
+      if (!p.tags) p.tags = [];
+      return idbPut('photos', p);
+    });
+    puts.push(idbPut('meta', { key: 'app', items: old.items || [], scenarios: old.scenarios || [] }));
+    return Promise.all(puts).then(function(){
+      try { localStorage.removeItem(OLD_KEY); } catch(e){}
+    });
+  }
+
+  function load(){
+    return idbGetAll('photos').catch(function(){ return []; }).then(function(existing){
+      if (existing.length > 0) return existing;
+      return migrateFromLocalStorage().then(function(){ return idbGetAll('photos').catch(function(){ return []; }); });
+    }).then(function(photos){
+      photos.sort(function(a,b){ return (b.addedAt||0) - (a.addedAt||0); });
+      photos.forEach(function(p){ if (!p.scenarioIds) p.scenarioIds = []; if (!p.tags) p.tags = []; });
+      data.photos = photos;
+      return idbGetAll('meta').catch(function(){ return []; });
+    }).then(function(metaRows){
+      var meta = metaRows[0] || { items: [], scenarios: [] };
+      data.items = meta.items || [];
+      data.scenarios = meta.scenarios || [];
+    }).catch(function(e){
+      console.error(e);
+      alert('Your browser doesn\'t support on-device storage here, so nothing will be saved between visits.');
+    });
+  }
+  function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4); }
+
+  function findOrCreateItem(rawName){
+    var name = rawName.trim();
+    if (!name) return null;
+    var key = name.toLowerCase();
+    var found = data.items.find(function(it){ return it.name.toLowerCase() === key; });
+    if (found) return found;
+    var item = { id: uid(), name: name, status: null };
+    data.items.push(item);
+    return item;
+  }
+
+  function itemPhotoCount(itemId){
+    var count = 0;
+    data.photos.forEach(function(p){
+      if (p.tags.some(function(t){ return t.itemId === itemId; })) count++;
+    });
+    return count;
+  }
+
+  function findOrCreateScenario(rawName){
+    var name = rawName.trim();
+    if (!name) return null;
+    var key = name.toLowerCase();
+    var found = data.scenarios.find(function(s){ return s.name.toLowerCase() === key; });
+    if (found) return found;
+    var scenario = { id: uid(), name: name };
+    data.scenarios.push(scenario);
+    return scenario;
+  }
+  function scenarioPhotoCount(scenarioId){
+    return data.photos.filter(function(p){ return p.scenarioIds.indexOf(scenarioId) !== -1; }).length;
+  }
+  function photoMatchesFilter(p, filter){
+    if (!filter) return true;
+    if (filter.type === 'scenario') return p.scenarioIds.indexOf(filter.ids[0]) !== -1;
+    var tagItemIds = p.tags.map(function(t){ return t.itemId; });
+    if (filter.mode === 'all') return filter.ids.every(function(id){ return tagItemIds.indexOf(id) !== -1; });
+    return filter.ids.some(function(id){ return tagItemIds.indexOf(id) !== -1; });
+  }
+
+  // ---------- Tabs ----------
+  var tabBoard = document.getElementById('tabBoard');
+  var tabWardrobe = document.getElementById('tabWardrobe');
+  var tabScenarios = document.getElementById('tabScenarios');
+  var boardView = document.getElementById('boardView');
+  var wardrobeView = document.getElementById('wardrobeView');
+  var scenariosView = document.getElementById('scenariosView');
+  var subline = document.getElementById('subline');
+
+  var sublines = {
+    board: 'Tag every item, then pull up every look it\'s in.',
+    wardrobe: 'Mark what\'s already in the wardrobe, and what\'s still on the list.',
+    scenarios: 'Link looks to where you\'d wear them — gym, work, date night.'
+  };
+
+  function showTab(which){
+    tabBoard.classList.toggle('active', which==='board');
+    tabWardrobe.classList.toggle('active', which==='wardrobe');
+    tabScenarios.classList.toggle('active', which==='scenarios');
+    boardView.style.display = which==='board' ? '' : 'none';
+    wardrobeView.style.display = which==='wardrobe' ? '' : 'none';
+    scenariosView.style.display = which==='scenarios' ? '' : 'none';
+    subline.textContent = sublines[which];
+    if (which === 'board') renderBoard();
+    else if (which === 'wardrobe') renderWardrobe();
+    else renderScenarios();
+  }
+  tabBoard.addEventListener('click', function(){ showTab('board'); });
+  tabWardrobe.addEventListener('click', function(){ showTab('wardrobe'); });
+  tabScenarios.addEventListener('click', function(){ showTab('scenarios'); });
+
+  // ---------- Filter ----------
+  var activeFilter = null; // { type: 'item'|'scenario', ids: [...], mode: 'any'|'all' }
+  var filterBar = document.getElementById('filterBar');
+  var filterName = document.getElementById('filterName');
+  document.getElementById('clearFilter').addEventListener('click', function(){
+    activeFilter = null;
+    filterBar.classList.remove('show');
+    renderBoard();
+  });
+
+  function filterByItem(itemIds, mode){
+    activeFilter = { type: 'item', ids: itemIds, mode: mode || 'any' };
+    var names = itemIds.map(function(id){
+      var it = data.items.find(function(i){ return i.id === id; });
+      return it ? it.name : '';
+    });
+    filterName.textContent = names.length > 1 ? names.join(mode === 'all' ? ' + ' : ' or ') : names[0];
+    filterBar.classList.add('show');
+    showTab('board');
+  }
+  function filterByScenario(scenarioId){
+    activeFilter = { type: 'scenario', ids: [scenarioId] };
+    var sc = data.scenarios.find(function(s){ return s.id === scenarioId; });
+    filterName.textContent = sc ? sc.name : '';
+    filterBar.classList.add('show');
+    showTab('board');
+  }
+
+  // ---------- Board ----------
+  function renderBoard(){
+    if (data.photos.length === 0 && !activeFilter){
+      boardView.innerHTML =
+        '<div class="empty"><div class="big">No looks yet</div>' +
+        'Add a photo, then tap on it to name each piece — "Navy loafer", "Grey wool coat" — ' +
+        'and it\'ll show up in your wardrobe list.<br><br>' +
+        '<button class="add-card" style="display:inline-flex;width:160px;margin-top:8px;" id="emptyAdd">' +
+        '<span class="plus">+</span>Add a photo</button></div>';
+      document.getElementById('emptyAdd').addEventListener('click', openFilePicker);
+      return;
+    }
+    var html = '<div class="board">';
+    data.photos.forEach(function(p){
+      var matches = activeFilter ? photoMatchesFilter(p, activeFilter) : true;
+      var cls = 'card';
+      if (activeFilter) cls += matches ? ' matched' : ' dimmed';
+      var scenarioNames = p.scenarioIds.map(function(id){
+        var s = data.scenarios.find(function(x){ return x.id === id; });
+        return s ? s.name : null;
+      }).filter(Boolean);
+      html += '<div class="'+cls+'" data-id="'+p.id+'">' +
+        '<img src="'+p.dataUrl+'" alt="">' +
+        (p.tags.length ? '<span class="badge">'+p.tags.length+' tagged</span>' : '') +
+        (scenarioNames.length ? '<div class="scenarios">'+scenarioNames.map(function(n){ return '<span>'+escapeHtml(n)+'</span>'; }).join('')+'</div>' : '') +
+        '</div>';
+    });
+    html += '<div class="add-card" id="boardAdd"><span class="plus">+</span>Add a photo</div>';
+    html += '</div>';
+    boardView.innerHTML = html;
+    document.getElementById('boardAdd').addEventListener('click', openFilePicker);
+    boardView.querySelectorAll('.card').forEach(function(el){
+      el.addEventListener('click', function(){ openDetail(el.getAttribute('data-id')); });
+    });
+  }
+
+  // ---------- Wardrobe ----------
+  var selectedItemIds = [];
+  var selectMode = 'any';
+
+  function renderWardrobe(){
+    if (data.items.length === 0){
+      wardrobeView.innerHTML = '<div class="empty"><div class="big">Nothing tagged yet</div>' +
+        'Tag a few pieces on the Board and they\'ll collect here, ready to mark as owned or on the list to buy.</div>';
+      return;
+    }
+    var sorted = data.items.slice().sort(function(a,b){ return a.name.localeCompare(b.name); });
+    var html = '<div class="wlist">';
+    sorted.forEach(function(it){
+      var count = itemPhotoCount(it.id);
+      var picked = selectedItemIds.indexOf(it.id) !== -1;
+      html += '<div class="witem">' +
+        '<div class="pick '+(picked?'on':'')+'" data-id="'+it.id+'">'+(picked?'✓':'')+'</div>' +
+        '<button class="name-btn" data-id="'+it.id+'">'+escapeHtml(it.name)+
+          '<span class="count">'+count+' look'+(count===1?'':'s')+'</span></button>' +
+        '<div class="status-toggle">' +
+          '<button class="own '+(it.status==='own'?'on':'')+'" data-id="'+it.id+'" data-status="own">Own</button>' +
+          '<button class="buy '+(it.status==='buy'?'on':'')+'" data-id="'+it.id+'" data-status="buy">To buy</button>' +
+        '</div>' +
+        '<button class="del" data-id="'+it.id+'" title="Remove item">✕</button>' +
+      '</div>';
+    });
+    html += '</div>';
+    html += '<div class="selectbar" id="selectbar">' +
+      '<span id="selectCount"></span>' +
+      '<div class="mode-toggle">' +
+        '<button data-mode="any" class="'+(selectMode==='any'?'on':'')+'">Any</button>' +
+        '<button data-mode="all" class="'+(selectMode==='all'?'on':'')+'">All</button>' +
+      '</div>' +
+      '<button class="view" id="viewSelected">View looks</button>' +
+    '</div>';
+    wardrobeView.innerHTML = html;
+
+    wardrobeView.querySelectorAll('.pick').forEach(function(b){
+      b.addEventListener('click', function(){
+        var id = b.getAttribute('data-id');
+        var idx = selectedItemIds.indexOf(id);
+        if (idx === -1) selectedItemIds.push(id); else selectedItemIds.splice(idx,1);
+        renderWardrobe();
+      });
+    });
+    wardrobeView.querySelectorAll('.name-btn').forEach(function(b){
+      b.addEventListener('click', function(){ filterByItem([b.getAttribute('data-id')], 'any'); });
+    });
+    wardrobeView.querySelectorAll('.status-toggle button').forEach(function(b){
+      b.addEventListener('click', function(){
+        var it = data.items.find(function(i){ return i.id === b.getAttribute('data-id'); });
+        var status = b.getAttribute('data-status');
+        it.status = (it.status === status) ? null : status;
+        saveMeta();
+        renderWardrobe();
+      });
+    });
+    wardrobeView.querySelectorAll('.del').forEach(function(b){
+      b.addEventListener('click', function(){
+        var id = b.getAttribute('data-id');
+        if (!confirm('Remove this item and its tags from every photo?')) return;
+        data.items = data.items.filter(function(i){ return i.id !== id; });
+        data.photos.forEach(function(p){ p.tags = p.tags.filter(function(t){ return t.itemId !== id; }); });
+        selectedItemIds = selectedItemIds.filter(function(x){ return x !== id; });
+        saveMeta();
+        persistAllPhotos();
+        renderWardrobe();
+      });
+    });
+
+    var bar = document.getElementById('selectbar');
+    if (selectedItemIds.length > 1){
+      bar.classList.add('show');
+      document.getElementById('selectCount').textContent = selectedItemIds.length + ' selected';
+      bar.querySelectorAll('.mode-toggle button').forEach(function(b){
+        b.addEventListener('click', function(){ selectMode = b.getAttribute('data-mode'); renderWardrobe(); });
+      });
+      document.getElementById('viewSelected').addEventListener('click', function(){
+        var ids = selectedItemIds.slice();
+        filterByItem(ids, selectMode);
+      });
+    }
+  }
+
+  // ---------- Scenarios ----------
+  function renderScenarios(){
+    if (data.scenarios.length === 0){
+      scenariosView.innerHTML = '<div class="empty"><div class="big">No scenarios yet</div>' +
+        'Open a photo and tag it "Gym", "Work", or "Date night" — then come back here to pull up every look for that occasion.</div>';
+      return;
+    }
+    var sorted = data.scenarios.slice().sort(function(a,b){ return a.name.localeCompare(b.name); });
+    var html = '<div class="wlist">';
+    sorted.forEach(function(s){
+      var count = scenarioPhotoCount(s.id);
+      html += '<div class="witem">' +
+        '<button class="name-btn" data-id="'+s.id+'" style="flex:1;">'+escapeHtml(s.name)+
+          '<span class="count">'+count+' look'+(count===1?'':'s')+'</span></button>' +
+        '<button class="del" data-id="'+s.id+'" title="Remove scenario">✕</button>' +
+      '</div>';
+    });
+    html += '</div>';
+    scenariosView.innerHTML = html;
+    scenariosView.querySelectorAll('.name-btn').forEach(function(b){
+      b.addEventListener('click', function(){ filterByScenario(b.getAttribute('data-id')); });
+    });
+    scenariosView.querySelectorAll('.del').forEach(function(b){
+      b.addEventListener('click', function(){
+        var id = b.getAttribute('data-id');
+        if (!confirm('Remove this scenario from every photo?')) return;
+        data.scenarios = data.scenarios.filter(function(s){ return s.id !== id; });
+        data.photos.forEach(function(p){ p.scenarioIds = p.scenarioIds.filter(function(sid){ return sid !== id; }); });
+        saveMeta();
+        persistAllPhotos();
+        renderScenarios();
+      });
+    });
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  // ---------- File add ----------
+  var fileInput = document.getElementById('fileInput');
+  function openFilePicker(){ fileInput.click(); }
+  fileInput.addEventListener('change', function(e){
+    var files = Array.prototype.slice.call(e.target.files || []);
+    var remaining = files.length;
+    if (!remaining) return;
+    var base = Date.now();
+    files.forEach(function(file, idx){
+      var reader = new FileReader();
+      reader.onload = function(ev){
+        compressImage(ev.target.result, function(dataUrl){
+          var photo = { id: uid(), dataUrl: dataUrl, tags: [], scenarioIds: [], addedAt: base - idx };
+          data.photos.unshift(photo);
+          data.photos.sort(function(a,b){ return (b.addedAt||0) - (a.addedAt||0); });
+          savePhoto(photo);
+          remaining--;
+          if (remaining === 0){ fileInput.value = ''; renderBoard(); }
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+
+  function compressImage(dataUrl, cb){
+    var img = new Image();
+    img.onload = function(){
+      var maxDim = 1100;
+      var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      var w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      cb(canvas.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = function(){ cb(dataUrl); };
+    img.src = dataUrl;
+  }
+
+  // ---------- Detail / tagging overlay ----------
+  var overlay = document.getElementById('overlay');
+  var stage = document.getElementById('stage');
+  var stageImg = document.getElementById('stageImg');
+  var currentPhotoId = null;
+
+  function openDetail(photoId){
+    currentPhotoId = photoId;
+    var p = data.photos.find(function(x){ return x.id === photoId; });
+    stageImg.src = p.dataUrl;
+    overlay.classList.add('show');
+    renderPins();
+    renderScenarioEditor();
+  }
+  document.getElementById('closeOverlay').addEventListener('click', function(){
+    overlay.classList.remove('show');
+    closePopover();
+    var wasFiltering = activeFilter;
+    renderBoard();
+    if (wasFiltering) filterBar.classList.add('show');
+  });
+
+  var scenarioEditor = document.getElementById('scenarioEditor');
+  function renderScenarioEditor(){
+    var p = data.photos.find(function(x){ return x.id === currentPhotoId; });
+    var html = '';
+    p.scenarioIds.forEach(function(id){
+      var s = data.scenarios.find(function(x){ return x.id === id; });
+      if (!s) return;
+      html += '<span class="chip">'+escapeHtml(s.name)+'<button data-id="'+id+'">✕</button></span>';
+    });
+    html += '<input type="text" id="scenarioInput" placeholder="Add a scenario, e.g. Gym">';
+    scenarioEditor.innerHTML = html;
+    scenarioEditor.querySelectorAll('.chip button').forEach(function(b){
+      b.addEventListener('click', function(){
+        var id = b.getAttribute('data-id');
+        p.scenarioIds = p.scenarioIds.filter(function(x){ return x !== id; });
+        savePhoto(p);
+        renderScenarioEditor();
+      });
+    });
+    var input = document.getElementById('scenarioInput');
+    input.addEventListener('keydown', function(e){
+      if (e.key === 'Enter'){
+        var name = input.value.trim();
+        if (!name) return;
+        var s = findOrCreateScenario(name);
+        if (p.scenarioIds.indexOf(s.id) === -1) p.scenarioIds.push(s.id);
+        saveMeta();
+        savePhoto(p);
+        renderScenarioEditor();
+      }
+    });
+  }
+  document.getElementById('removePhoto').addEventListener('click', function(){
+    if (!confirm('Remove this photo and its tags?')) return;
+    data.photos = data.photos.filter(function(p){ return p.id !== currentPhotoId; });
+    deletePhotoRecord(currentPhotoId);
+    overlay.classList.remove('show');
+    renderBoard();
+  });
+
+  function renderPins(){
+    stage.querySelectorAll('.pin, .taglabel').forEach(function(el){ el.remove(); });
+    var p = data.photos.find(function(x){ return x.id === currentPhotoId; });
+    p.tags.forEach(function(t){
+      var item = data.items.find(function(i){ return i.id === t.itemId; });
+      if (!item) return;
+      var pin = document.createElement('div');
+      pin.className = 'pin' + (item.status === 'own' ? ' owned' : '');
+      if (activeFilter && activeFilter.type === 'item' && activeFilter.ids.indexOf(t.itemId) !== -1) pin.classList.add('pulse');
+      pin.style.left = t.x + '%';
+      pin.style.top = t.y + '%';
+      pin.addEventListener('click', function(ev){
+        ev.stopPropagation();
+        openPinPopover(t, item, pin);
+      });
+      stage.appendChild(pin);
+    });
+  }
+
+  stage.addEventListener('click', function(ev){
+    if (ev.target !== stageImg) return;
+    closePopover();
+    var rect = stageImg.getBoundingClientRect();
+    var stageRect = stage.getBoundingClientRect();
+    var x = ((ev.clientX - rect.left) / rect.width) * 100;
+    var y = ((ev.clientY - rect.top) / rect.height) * 100;
+    var px = ev.clientX - stageRect.left;
+    var py = ev.clientY - stageRect.top;
+    openNewTagPopover(x, y, px, py);
+  });
+
+  var openPop = null;
+  function closePopover(){ if (openPop){ openPop.remove(); openPop = null; } }
+
+  function openNewTagPopover(xPct, yPct, px, py){
+    closePopover();
+    var pop = document.createElement('div');
+    pop.className = 'popover';
+    pop.style.left = Math.max(4, px - 100) + 'px';
+    pop.style.top = (py + 14) + 'px';
+    pop.innerHTML = '<input type="text" placeholder="e.g. Navy loafer" id="newTagInput">' +
+      '<div class="row"><button class="primary" id="saveTagBtn">Add pin</button>' +
+      '<button id="cancelTagBtn">Cancel</button></div>';
+    stage.appendChild(pop);
+    openPop = pop;
+    var input = pop.querySelector('#newTagInput');
+    input.focus();
+    function commit(){
+      var name = input.value.trim();
+      if (!name) { closePopover(); return; }
+      var item = findOrCreateItem(name);
+      var p = data.photos.find(function(x){ return x.id === currentPhotoId; });
+      p.tags.push({ id: uid(), itemId: item.id, x: xPct, y: yPct });
+      saveMeta();
+      savePhoto(p);
+      closePopover();
+      renderPins();
+    }
+    input.addEventListener('keydown', function(e){ if (e.key === 'Enter') commit(); if (e.key === 'Escape') closePopover(); });
+    pop.querySelector('#saveTagBtn').addEventListener('click', commit);
+    pop.querySelector('#cancelTagBtn').addEventListener('click', closePopover);
+  }
+
+  function openPinPopover(tag, item, pinEl){
+    closePopover();
+    var pop = document.createElement('div');
+    pop.className = 'popover';
+    pop.style.left = (parseFloat(pinEl.style.left)/100 * stage.clientWidth - 100) + 'px';
+    pop.style.top = (parseFloat(pinEl.style.top)/100 * stage.clientHeight + 14) + 'px';
+    pop.innerHTML = '<div style="font-family:var(--font-display);font-size:15px;">'+escapeHtml(item.name)+'</div>' +
+      '<div class="row">' +
+        '<button class="'+(item.status==='own'?'primary':'')+'" id="pinOwn">Own</button>' +
+        '<button class="'+(item.status==='buy'?'primary':'')+'" id="pinBuy">To buy</button>' +
+      '</div>' +
+      '<button class="del-tag" id="pinDel">Remove this pin</button>';
+    stage.appendChild(pop);
+    openPop = pop;
+    pop.querySelector('#pinOwn').addEventListener('click', function(){
+      item.status = item.status === 'own' ? null : 'own'; saveMeta(); renderPins(); closePopover();
+    });
+    pop.querySelector('#pinBuy').addEventListener('click', function(){
+      item.status = item.status === 'buy' ? null : 'buy'; saveMeta(); renderPins(); closePopover();
+    });
+    pop.querySelector('#pinDel').addEventListener('click', function(){
+      var p = data.photos.find(function(x){ return x.id === currentPhotoId; });
+      p.tags = p.tags.filter(function(t){ return t.id !== tag.id; });
+      savePhoto(p); closePopover(); renderPins();
+    });
+  }
+
+  // ---------- Init ----------
+  load().then(function(){ showTab('board'); });
+})();
+</script>
+</body>
+</html>
