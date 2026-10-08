@@ -222,11 +222,13 @@
   .wlist { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
   .witem {
     display: flex;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    gap: 8px;
     padding: 14px 4px;
     border-bottom: 1px solid var(--line);
   }
+  .witem .row-top { display: flex; align-items: center; gap: 12px; }
+  .witem .row-bottom { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-left: 30px; }
   .witem .name-btn {
     background: none;
     border: none;
@@ -289,6 +291,65 @@
     color: var(--bg);
   }
   .witem .pick.on { background: var(--ink); border-color: var(--ink); }
+
+  .season-row { display: inline-flex; gap: 4px; }
+  .season-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .season-btn.on { background: var(--ink); border-color: var(--ink); }
+  .season-btn.small { width: 22px; height: 22px; font-size: 11px; }
+
+  .buy-link { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
+  .buy-link a {
+    color: var(--buy);
+    text-decoration: none;
+    border-bottom: 1px solid var(--buy-bg);
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .buy-link button.linkbtn {
+    border: none;
+    background: none;
+    color: var(--ink-soft);
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 0;
+    font-family: var(--font-body);
+  }
+  .buy-link input {
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+    padding: 5px 8px;
+    font-size: 12px;
+    font-family: var(--font-body);
+    color: var(--ink);
+    background: var(--surface);
+    width: 160px;
+  }
+
+  .season-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 4px 16px;
+    flex-wrap: wrap;
+  }
+  .season-filter .label { font-size: 12px; color: var(--ink-soft); margin-right: 2px; }
 
   .selectbar {
     position: sticky;
@@ -429,7 +490,7 @@
     border-radius: 6px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.35);
     padding: 10px;
-    width: 200px;
+    width: 220px;
   }
   .popover input {
     width: 100%;
@@ -474,19 +535,226 @@
   }
 
   input[type=file] { display: none; }
+
+  .wardrobe-search {
+    width: 100%;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    padding: 11px 16px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--surface);
+    margin-bottom: 14px;
+  }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .chip-btn {
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-family: var(--font-body);
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+  .chip-btn.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .filter-actions { display: flex; align-items: center; gap: 12px; padding: 0 4px 14px; }
+  .filter-actions .label { font-size: 12px; color: var(--ink-soft); margin-right: auto; }
+  .plain-btn {
+    border: none;
+    background: none;
+    color: var(--ink-soft);
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: var(--font-body);
+    padding: 0;
+  }
+  .view-pill {
+    border: none;
+    background: var(--buy);
+    color: #211F1C;
+    font-weight: 600;
+    font-size: 11.5px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: var(--font-body);
+  }
+
+  .head-actions { display: flex; gap: 8px; }
+
+  .crop-stage { position: relative; line-height: 0; touch-action: none; max-width: 100%; }
+  .crop-stage img { max-width: 100%; max-height: 66vh; display: block; user-select: none; -webkit-user-drag: none; }
+  .crop-box {
+    position: absolute;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.55);
+    cursor: move;
+    touch-action: none;
+  }
+  .crop-box i {
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    margin: -13px 0 0 -13px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    touch-action: none;
+  }
+  .crop-box i[data-h="tl"] { left: 0; top: 0; }
+  .crop-box i[data-h="tr"] { left: 100%; top: 0; }
+  .crop-box i[data-h="bl"] { left: 0; top: 100%; }
+  .crop-box i[data-h="br"] { left: 100%; top: 100%; }
+  .crop-actions { padding: 14px 16px 18px; text-align: center; flex-shrink: 0; }
+  .crop-actions button {
+    border: none;
+    background: var(--buy);
+    color: #211F1C;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 11px 24px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: var(--font-body);
+  }
+
+  .inspo-form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; }
+  .inspo-form input {
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--surface);
+  }
+  .inspo-actions { display: flex; gap: 8px; }
+  .inspo-actions button {
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--ink);
+    border-radius: 6px;
+    padding: 9px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: var(--font-body);
+  }
+  .inspo-actions button.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); flex: 1; }
+  .inspo-link { flex: 1; min-width: 0; text-decoration: none; color: var(--ink); }
+  .inspo-name { font-family: var(--font-display); font-size: 16.5px; display: block; }
+
+  @media (max-width: 640px) {
+    header.top { flex-direction: column; align-items: stretch; gap: 14px; }
+    nav.tabs { display: flex; }
+    nav.tabs button { flex: 1; padding: 7px 4px; }
+  }
+
+  .auth-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    padding: 24px;
+    padding-top: calc(24px + env(safe-area-inset-top, 0px));
+  }
+  .auth-card { max-width: 340px; text-align: center; }
+  .auth-card .mark { font-family: var(--font-display); font-weight: 500; font-size: 30px; margin-bottom: 10px; }
+  .auth-card .mark .dot { color: var(--buy); }
+  .auth-card p { color: var(--ink-soft); font-size: 14px; margin: 0 0 26px; line-height: 1.5; }
+  .google-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    padding: 11px 16px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .auth-card .skip-link {
+    display: block;
+    margin: 16px auto 0;
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    font-size: 12.5px;
+    text-decoration: underline;
+    cursor: pointer;
+    font-family: var(--font-body);
+  }
+  .auth-card .status { font-size: 12px; color: var(--ink-soft); margin-top: 14px; min-height: 16px; }
+
+  .account {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    margin-top: 8px;
+  }
+  .account.show { display: flex; flex-wrap: wrap; }
+  .account img { width: 18px; height: 18px; border-radius: 50%; }
+  .account button {
+    border: none;
+    background: none;
+    color: var(--ink-soft);
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 11.5px;
+    font-family: var(--font-body);
+    padding: 0;
+  }
 </style>
 </head>
 <body>
+<div class="auth-screen" id="authScreen">
+  <div class="auth-card">
+    <div class="mark">the edit<span class="dot">.</span></div>
+    <p>Sign in to keep your looks in sync across every device. Everything is saved in a &ldquo;The Edit&rdquo; folder in your own Google Drive.</p>
+    <button class="google-btn" id="googleSignIn">
+      <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.57 2.7-3.88 2.7-6.62z"/>
+        <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.54-1.83.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.96v2.33A9 9 0 0 0 9 18z"/>
+        <path fill="#FBBC05" d="M3.95 10.7A5.4 5.4 0 0 1 3.68 9c0-.59.1-1.17.27-1.7V4.97H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.03l2.99-2.33z"/>
+        <path fill="#EA4335" d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.97l2.99 2.33C4.66 5.17 6.65 3.58 9 3.58z"/>
+      </svg>
+      Continue with Google
+    </button>
+    <button class="skip-link" id="skipSignIn">Continue without an account</button>
+    <div class="status" id="authStatus"></div>
+  </div>
+</div>
 <div class="app">
   <header class="top">
     <div>
       <div class="mark">the edit<span class="dot">.</span></div>
       <p class="sub" id="subline">Tag every item, then pull up every look it's in.</p>
+      <div class="account" id="accountBar">
+        <img id="accountAvatar" src="" alt="">
+        <span id="accountName"></span>
+        <span id="syncStatus"></span>
+        <button id="reconnectBtn" style="display:none;">Reconnect</button>
+        <button id="signInBtn" style="display:none;">Sign in with Google to sync</button>
+        <button id="signOutBtn">Sign out</button>
+      </div>
     </div>
     <nav class="tabs">
       <button id="tabBoard" class="active">Board</button>
       <button id="tabWardrobe">Wardrobe</button>
       <button id="tabScenarios">Scenarios</button>
+      <button id="tabInspo">Inspo</button>
     </nav>
   </header>
 
@@ -498,14 +766,29 @@
   <section id="boardView"></section>
   <section id="wardrobeView" style="display:none;"></section>
   <section id="scenariosView" style="display:none;"></section>
+  <section id="inspoView" style="display:none;"></section>
 </div>
 
 <input type="file" id="fileInput" accept="image/*" multiple>
 
+<div class="overlay" id="cropOverlay">
+  <div class="overlay-head">
+    <span class="hint">Crop if you need to — drag the box or its corners</span>
+    <button id="cropSkip">Skip crop</button>
+  </div>
+  <div class="stage-wrap">
+    <div class="crop-stage" id="cropStage">
+      <img id="cropImg" src="" alt="">
+      <div class="crop-box" id="cropBox"><i data-h="tl"></i><i data-h="tr"></i><i data-h="bl"></i><i data-h="br"></i></div>
+    </div>
+  </div>
+  <div class="crop-actions"><button id="cropApply">Crop &amp; continue</button></div>
+</div>
+
 <div class="overlay" id="overlay">
   <div class="overlay-head">
-    <span class="hint">Tap the photo to drop a pin</span>
-    <button id="closeOverlay">Done</button>
+    <span class="hint">Tap a piece to pin it</span>
+    <div class="head-actions"><button id="lensBtn">Search with Lens</button><button id="closeOverlay">Done</button></div>
   </div>
   <div class="stage-wrap">
     <div class="stage" id="stage">
@@ -520,8 +803,18 @@
 (function(){
   var DB_NAME = 'the-edit-lookbook';
   var OLD_KEY = 'the-edit-lookbook-v1'; // previous localStorage version, migrated on first run
-  var data = { photos: [], items: [], scenarios: [] };
+  var data = emptyData();
   var dbReady = null;
+  // ---- Google Drive setup ----
+  // Paste your OAuth Client ID here (Google Cloud console > APIs & Services > Credentials).
+  // It is safe to publish: it only identifies the app, it is not a password.
+  var CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+  var DRIVE_ENABLED = CLIENT_ID.indexOf('YOUR_') !== 0;
+  var SCOPES = 'https://www.googleapis.com/auth/drive.file openid email profile';
+  var TOKEN_KEY = 'the-edit-drive-token';
+  var SIGNED_KEY = 'the-edit-signed-in';
+  var USER_KEY = 'the-edit-user';
+  var STATE_KEY = 'the-edit-oauth-state';
 
   function openDB(){
     if (dbReady) return dbReady;
@@ -569,13 +862,324 @@
   }
   function onSaveError(e){
     console.error(e);
-    alert('Could not save that change — your device storage may be full.');
+    alert('Could not save that change — check your connection or device storage.');
   }
 
-  function saveMeta(){ idbPut('meta', { key: 'app', items: data.items, scenarios: data.scenarios }).catch(onSaveError); }
-  function savePhoto(p){ idbPut('photos', p).catch(onSaveError); }
-  function deletePhotoRecord(id){ idbDelete('photos', id).catch(onSaveError); }
+  // ---- Local (IndexedDB) persistence: the working copy on this device ----
+  function emptyData(){
+    return { photos: [], items: [], scenarios: [], inspo: [],
+             metaUpdatedAt: 0, deleted: [], dirty: false, remoteStamp: null, localVersion: 0 };
+  }
+  function idbSaveMeta(){
+    return idbPut('meta', {
+      key: 'app', items: data.items, scenarios: data.scenarios, inspo: data.inspo,
+      metaUpdatedAt: data.metaUpdatedAt, deleted: data.deleted, dirty: data.dirty, remoteStamp: data.remoteStamp
+    }).catch(onSaveError);
+  }
+  function idbSavePhoto(p){ return idbPut('photos', p).catch(onSaveError); }
+  function idbClear(store){
+    return openDB().then(function(db){
+      return new Promise(function(resolve, reject){
+        var tx = db.transaction(store, 'readwrite');
+        tx.objectStore(store).clear();
+        tx.oncomplete = function(){ resolve(); };
+        tx.onerror = function(){ reject(tx.error); };
+      });
+    });
+  }
+
+  function normalizeItems(){
+    data.items.forEach(function(it){
+      if (!it.seasons) it.seasons = [];
+      if (it.buyLink === undefined) it.buyLink = null;
+      if (it.category === undefined) it.category = null;
+    });
+  }
+
+  // ---- Change tracking: every edit is saved locally first, then synced to Drive when connected ----
+  function markDirty(){
+    data.dirty = true;
+    data.localVersion++;
+    return idbSaveMeta();
+  }
+  function saveMeta(){
+    data.metaUpdatedAt = Date.now();
+    var r = markDirty();
+    scheduleSync();
+    return r;
+  }
+  function savePhoto(p){
+    p.updatedAt = Date.now();
+    var r = idbSavePhoto(p);
+    markDirty();
+    scheduleSync();
+    return r;
+  }
   function persistAllPhotos(){ data.photos.forEach(savePhoto); }
+  function deletePhotoRecord(p){
+    data.deleted.push({ id: p.id, fileId: p.fileId || null, done: false });
+    idbDelete('photos', p.id).catch(onSaveError);
+    markDirty();
+    scheduleSync();
+  }
+
+  // ---- Google Drive sync ----
+  var API = 'https://www.googleapis.com/drive/v3/files';
+  var UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
+  var FOLDER_NAME = 'The Edit';
+  var DATA_NAME = 'the-edit-data.json';
+
+  var syncTimer = null;
+  var syncing = false;
+  var syncAgain = false;
+
+  function dataUrlToBlob(u){
+    var parts = u.split(',');
+    var mime = (parts[0].match(/:(.*?);/) || [])[1] || 'image/jpeg';
+    var bin = atob(parts[1]);
+    var arr = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+  }
+  function blobToDataUrl(b){
+    return new Promise(function(resolve, reject){
+      var r = new FileReader();
+      r.onload = function(){ resolve(r.result); };
+      r.onerror = function(){ reject(r.error); };
+      r.readAsDataURL(b);
+    });
+  }
+
+  async function driveFetch(token, url, opts){
+    opts = opts || {};
+    opts.headers = Object.assign({ Authorization: 'Bearer ' + token }, opts.headers || {});
+    var res = await fetch(url, opts);
+    if (!res.ok){
+      var err = new Error('Drive ' + res.status);
+      err.status = res.status;
+      throw err;
+    }
+    return res;
+  }
+  async function driveFindOne(token, q, fields){
+    var res = await driveFetch(token, API + '?q=' + encodeURIComponent(q) +
+      '&fields=' + encodeURIComponent('files(' + fields + ')') + '&pageSize=1&spaces=drive');
+    var j = await res.json();
+    return (j.files && j.files[0]) || null;
+  }
+  async function driveEnsureFolder(token){
+    var f = await driveFindOne(token,
+      "name='" + FOLDER_NAME + "' and mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false", 'id');
+    if (f) return f.id;
+    var res = await driveFetch(token, API + '?fields=id', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' })
+    });
+    return (await res.json()).id;
+  }
+  function multipart(meta, blob, mime){
+    var boundary = 'edit' + uid() + uid();
+    var head = '--' + boundary + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(meta) +
+      '\r\n--' + boundary + '\r\nContent-Type: ' + mime + '\r\n\r\n';
+    var tail = '\r\n--' + boundary + '--';
+    return { body: new Blob([head, blob, tail]), type: 'multipart/related; boundary=' + boundary };
+  }
+  async function driveCreate(token, meta, blob, mime){
+    var mp = multipart(meta, blob, mime);
+    var res = await driveFetch(token, UPLOAD + '?uploadType=multipart&fields=id,modifiedTime', {
+      method: 'POST', headers: { 'Content-Type': mp.type }, body: mp.body
+    });
+    return res.json();
+  }
+  async function driveUpdate(token, id, blob, mime){
+    var res = await driveFetch(token, UPLOAD + '/' + id + '?uploadType=media&fields=id,modifiedTime', {
+      method: 'PATCH', headers: { 'Content-Type': mime }, body: blob
+    });
+    return res.json();
+  }
+
+  function snapshot(){
+    return {
+      version: 1,
+      updatedAt: Date.now(),
+      metaUpdatedAt: data.metaUpdatedAt || 0,
+      items: data.items, scenarios: data.scenarios, inspo: data.inspo,
+      photos: data.photos.filter(function(p){ return p.fileId; }).map(function(p){
+        return { id: p.id, fileId: p.fileId, tags: p.tags, scenarioIds: p.scenarioIds, addedAt: p.addedAt, updatedAt: p.updatedAt || 0 };
+      }),
+      deleted: data.deleted.map(function(t){ return { id: t.id, fileId: t.fileId || null, done: !!t.done }; })
+    };
+  }
+
+  // Combine the Drive copy into the local copy. Photos are unioned (minus deletions);
+  // per-photo tags and the wardrobe/scenario/inspo lists take whichever side was edited last.
+  function mergeRemote(remote){
+    var changed = false, needPush = false;
+    var tombs = {};
+    data.deleted.forEach(function(t){ tombs[t.id] = t; });
+    (remote.deleted || []).forEach(function(t){
+      if (!tombs[t.id]){
+        var nt = { id: t.id, fileId: t.fileId || null, done: !!t.done };
+        tombs[t.id] = nt;
+        data.deleted.push(nt);
+        changed = true;
+      } else {
+        if (!tombs[t.id].fileId && t.fileId) tombs[t.id].fileId = t.fileId;
+        if (t.done) tombs[t.id].done = true;
+      }
+    });
+
+    var remoteMeta = remote.metaUpdatedAt || 0, localMeta = data.metaUpdatedAt || 0;
+    var localEmpty = !data.items.length && !data.scenarios.length && !data.inspo.length;
+    var remoteHas = (remote.items || []).length + (remote.scenarios || []).length + (remote.inspo || []).length > 0;
+    if (remoteMeta > localMeta || (localEmpty && remoteHas)){
+      data.items = remote.items || [];
+      data.scenarios = remote.scenarios || [];
+      data.inspo = remote.inspo || [];
+      data.metaUpdatedAt = Math.max(remoteMeta, localMeta);
+      normalizeItems();
+      changed = true;
+    } else if (localMeta > remoteMeta){
+      needPush = true;
+    }
+
+    var byId = {}, remoteIds = {};
+    data.photos.forEach(function(p){ byId[p.id] = p; });
+    (remote.photos || []).forEach(function(rp){
+      if (tombs[rp.id]) return;
+      remoteIds[rp.id] = true;
+      var lp = byId[rp.id];
+      if (!lp){
+        data.photos.push({ id: rp.id, dataUrl: null, tags: rp.tags || [], scenarioIds: rp.scenarioIds || [],
+                           addedAt: rp.addedAt || 0, updatedAt: rp.updatedAt || 0, fileId: rp.fileId });
+        changed = true;
+      } else {
+        if (!lp.fileId && rp.fileId) lp.fileId = rp.fileId;
+        var ru = rp.updatedAt || 0, lu = lp.updatedAt || 0;
+        if (ru > lu){
+          lp.tags = rp.tags || [];
+          lp.scenarioIds = rp.scenarioIds || [];
+          lp.updatedAt = ru;
+          idbSavePhoto(lp);
+          changed = true;
+        } else if (lu > ru){
+          needPush = true;
+        }
+      }
+    });
+    data.photos.forEach(function(p){
+      if (p.dataUrl && p.fileId && !remoteIds[p.id] && !tombs[p.id]) needPush = true;
+    });
+
+    var before = data.photos.length;
+    data.photos = data.photos.filter(function(p){
+      if (tombs[p.id]){ idbDelete('photos', p.id).catch(function(){}); return false; }
+      return true;
+    });
+    if (data.photos.length !== before) changed = true;
+    data.photos.sort(function(a, b){ return (b.addedAt || 0) - (a.addedAt || 0); });
+    return { changed: changed, needPush: needPush };
+  }
+
+  async function syncWithDrive(token){
+    var folderId = await driveEnsureFolder(token);
+    var df = await driveFindOne(token,
+      "name='" + DATA_NAME + "' and '" + folderId + "' in parents and trashed=false", 'id,modifiedTime');
+    var needPush = !!data.dirty || !df;
+    var changedLocal = false;
+
+    // 1. Pull if another device (or an earlier session) changed the Drive copy
+    if (df && df.modifiedTime !== data.remoteStamp){
+      var res = await driveFetch(token, API + '/' + df.id + '?alt=media');
+      var remote = await res.json();
+      var m = mergeRemote(remote);
+      changedLocal = m.changed;
+      needPush = needPush || m.needPush;
+    }
+
+    // 2. Download photos we don't have on this device yet
+    var missing = data.photos.filter(function(p){ return !p.dataUrl; });
+    for (var i = 0; i < missing.length; i++){
+      var mp = missing[i];
+      setSyncStatus('syncing', 'Downloading ' + (i + 1) + ' of ' + missing.length);
+      try {
+        var r = await driveFetch(token, API + '/' + mp.fileId + '?alt=media');
+        mp.dataUrl = await blobToDataUrl(await r.blob());
+        await idbSavePhoto(mp);
+        changedLocal = true;
+      } catch(e){
+        if (e.status === 404){ mp._gone = true; needPush = true; } else throw e;
+      }
+    }
+    if (missing.some(function(p){ return p._gone; })){
+      data.photos = data.photos.filter(function(p){ return !p._gone; });
+    }
+
+    // 3. Upload photos that exist only on this device
+    var toUpload = data.photos.filter(function(p){ return p.dataUrl && !p.fileId; });
+    for (var j = 0; j < toUpload.length; j++){
+      var up = toUpload[j];
+      setSyncStatus('syncing', 'Uploading ' + (j + 1) + ' of ' + toUpload.length);
+      var created = await driveCreate(token, { name: 'photo-' + up.id + '.jpg', parents: [folderId] },
+                                      dataUrlToBlob(up.dataUrl), 'image/jpeg');
+      up.fileId = created.id;
+      await idbSavePhoto(up);
+      needPush = true;
+    }
+
+    // 4. Remove Drive files for photos deleted on any device
+    for (var k = 0; k < data.deleted.length; k++){
+      var t = data.deleted[k];
+      if (t.fileId && !t.done){
+        try { await driveFetch(token, API + '/' + t.fileId, { method: 'DELETE' }); }
+        catch(e){ if (e.status !== 404) throw e; }
+        t.done = true;
+        needPush = true;
+      }
+    }
+
+    // 5. Write the small data file back if anything changed here
+    if (needPush){
+      if (!data.metaUpdatedAt && (data.items.length || data.scenarios.length || data.inspo.length)) data.metaUpdatedAt = Date.now();
+      var version = data.localVersion;
+      var blob = new Blob([JSON.stringify(snapshot())], { type: 'application/json' });
+      var out = df
+        ? await driveUpdate(token, df.id, blob, 'application/json')
+        : await driveCreate(token, { name: DATA_NAME, parents: [folderId], mimeType: 'application/json' }, blob, 'application/json');
+      data.remoteStamp = out.modifiedTime;
+      if (data.localVersion === version) data.dirty = false;
+    } else if (df){
+      data.remoteStamp = df.modifiedTime;
+    }
+    await idbSaveMeta();
+    if (changedLocal) refreshCurrentView();
+  }
+
+  function scheduleSync(){
+    if (!DRIVE_ENABLED || !localStorage.getItem(SIGNED_KEY)) return;
+    if (!getToken()){ setSyncStatus('paused'); return; }
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(runSync, 1500);
+  }
+  async function runSync(){
+    if (!DRIVE_ENABLED) return;
+    if (syncing){ syncAgain = true; return; }
+    var token = getToken();
+    if (!token){ setSyncStatus('paused'); return; }
+    syncing = true;
+    setSyncStatus('syncing');
+    try {
+      await syncWithDrive(token);
+      setSyncStatus('ok');
+    } catch(e){
+      console.error(e);
+      if (e && e.status === 401){ clearToken(); setSyncStatus('paused'); }
+      else setSyncStatus('error');
+    }
+    syncing = false;
+    if (syncAgain){ syncAgain = false; runSync(); }
+  }
 
   function migrateFromLocalStorage(){
     var raw;
@@ -610,6 +1214,12 @@
       var meta = metaRows[0] || { items: [], scenarios: [] };
       data.items = meta.items || [];
       data.scenarios = meta.scenarios || [];
+      data.inspo = meta.inspo || [];
+      data.metaUpdatedAt = meta.metaUpdatedAt || 0;
+      data.deleted = meta.deleted || [];
+      data.dirty = !!meta.dirty;
+      data.remoteStamp = meta.remoteStamp || null;
+      normalizeItems();
     }).catch(function(e){
       console.error(e);
       alert('Your browser doesn\'t support on-device storage here, so nothing will be saved between visits.');
@@ -617,13 +1227,71 @@
   }
   function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4); }
 
+  var SEASONS = [
+    { key: 'spring', icon: '🌱', label: 'Spring' },
+    { key: 'summer', icon: '☀️', label: 'Summer' },
+    { key: 'autumn', icon: '🍂', label: 'Autumn' },
+    { key: 'winter', icon: '❄️', label: 'Winter' }
+  ];
+  function seasonLabel(key){
+    var s = SEASONS.find(function(x){ return x.key === key; });
+    return s ? s.label : key;
+  }
+  // Renders a row of season toggle buttons into `container`.
+  // getSeasons()/onToggle(key) let callers back this with either a real item or a staged array.
+  function renderSeasonIcons(container, getSeasons, onToggle, small){
+    var cls = 'season-btn' + (small ? ' small' : '');
+    container.innerHTML = SEASONS.map(function(s){
+      var on = getSeasons().indexOf(s.key) !== -1;
+      return '<button type="button" class="'+cls+(on?' on':'')+'" data-key="'+s.key+'" title="'+s.label+'">'+s.icon+'</button>';
+    }).join('');
+    container.querySelectorAll('.season-btn').forEach(function(b){
+      b.addEventListener('click', function(ev){
+        ev.stopPropagation();
+        onToggle(b.getAttribute('data-key'));
+        renderSeasonIcons(container, getSeasons, onToggle, small);
+      });
+    });
+  }
+
+  var CATEGORIES = [
+    { key: 'tops', icon: '👕', label: 'Tops' },
+    { key: 'bottoms', icon: '👖', label: 'Bottoms' },
+    { key: 'dresses', icon: '👗', label: 'Dresses' },
+    { key: 'outerwear', icon: '🧥', label: 'Jackets' },
+    { key: 'shoes', icon: '👟', label: 'Shoes' },
+    { key: 'accessories', icon: '👜', label: 'Accessories' }
+  ];
+  function categoryLabel(key){
+    var c = CATEGORIES.find(function(x){ return x.key === key; });
+    return c ? c.label : key;
+  }
+  // Renders a row of single-select category buttons. getCategory() returns the current key or null;
+  // clicking a selected one clears it. onSelect(key|null) applies the change.
+  function renderCategoryIcons(container, getCategory, onSelect, small){
+    var current = getCategory();
+    var cls = 'season-btn' + (small ? ' small' : '');
+    container.innerHTML = CATEGORIES.map(function(c){
+      var on = current === c.key;
+      return '<button type="button" class="'+cls+(on?' on':'')+'" data-key="'+c.key+'" title="'+c.label+'">'+c.icon+'</button>';
+    }).join('');
+    container.querySelectorAll('.season-btn').forEach(function(b){
+      b.addEventListener('click', function(ev){
+        ev.stopPropagation();
+        var key = b.getAttribute('data-key');
+        onSelect(current === key ? null : key);
+        renderCategoryIcons(container, getCategory, onSelect, small);
+      });
+    });
+  }
+
   function findOrCreateItem(rawName){
     var name = rawName.trim();
     if (!name) return null;
     var key = name.toLowerCase();
     var found = data.items.find(function(it){ return it.name.toLowerCase() === key; });
     if (found) return found;
-    var item = { id: uid(), name: name, status: null };
+    var item = { id: uid(), name: name, status: null, seasons: [], buyLink: null, category: null };
     data.items.push(item);
     return item;
   }
@@ -661,32 +1329,42 @@
   var tabBoard = document.getElementById('tabBoard');
   var tabWardrobe = document.getElementById('tabWardrobe');
   var tabScenarios = document.getElementById('tabScenarios');
+  var tabInspo = document.getElementById('tabInspo');
   var boardView = document.getElementById('boardView');
   var wardrobeView = document.getElementById('wardrobeView');
   var scenariosView = document.getElementById('scenariosView');
+  var inspoView = document.getElementById('inspoView');
   var subline = document.getElementById('subline');
 
   var sublines = {
     board: 'Tag every item, then pull up every look it\'s in.',
-    wardrobe: 'Mark what\'s already in the wardrobe, and what\'s still on the list.',
-    scenarios: 'Link looks to where you\'d wear them — gym, work, date night.'
+    wardrobe: 'Search, filter, and mark what you own or still want.',
+    scenarios: 'Link looks to where you\'d wear them — gym, work, date night.',
+    inspo: 'People whose style you love — one tap to their page.'
   };
 
+  var currentTab = 'board';
   function showTab(which){
+    currentTab = which;
     tabBoard.classList.toggle('active', which==='board');
     tabWardrobe.classList.toggle('active', which==='wardrobe');
     tabScenarios.classList.toggle('active', which==='scenarios');
+    tabInspo.classList.toggle('active', which==='inspo');
     boardView.style.display = which==='board' ? '' : 'none';
     wardrobeView.style.display = which==='wardrobe' ? '' : 'none';
     scenariosView.style.display = which==='scenarios' ? '' : 'none';
+    inspoView.style.display = which==='inspo' ? '' : 'none';
+    filterBar.classList.toggle('show', which==='board' && !!activeFilter);
     subline.textContent = sublines[which];
     if (which === 'board') renderBoard();
     else if (which === 'wardrobe') renderWardrobe();
-    else renderScenarios();
+    else if (which === 'scenarios') renderScenarios();
+    else renderInspo();
   }
   tabBoard.addEventListener('click', function(){ showTab('board'); });
   tabWardrobe.addEventListener('click', function(){ showTab('wardrobe'); });
   tabScenarios.addEventListener('click', function(){ showTab('scenarios'); });
+  tabInspo.addEventListener('click', function(){ showTab('inspo'); });
 
   // ---------- Filter ----------
   var activeFilter = null; // { type: 'item'|'scenario', ids: [...], mode: 'any'|'all' }
@@ -715,38 +1393,49 @@
     filterBar.classList.add('show');
     showTab('board');
   }
+  function filterByVisibleItems(ids, label){
+    activeFilter = { type: 'item', ids: ids.slice(), mode: 'any' };
+    filterName.textContent = label;
+    showTab('board');
+  }
 
   // ---------- Board ----------
   function renderBoard(){
     if (data.photos.length === 0 && !activeFilter){
       boardView.innerHTML =
         '<div class="empty"><div class="big">No looks yet</div>' +
-        'Add a photo, then tap on it to name each piece — "Navy loafer", "Grey wool coat" — ' +
-        'and it\'ll show up in your wardrobe list.<br><br>' +
+        'Add a photo, crop it if you like, then tap each piece to pin it — "Navy loafer", "Grey wool coat" — ' +
+        'and mark whether you own it or want to buy it.<br><br>' +
         '<button class="add-card" style="display:inline-flex;width:160px;margin-top:8px;" id="emptyAdd">' +
         '<span class="plus">+</span>Add a photo</button></div>';
       document.getElementById('emptyAdd').addEventListener('click', openFilePicker);
       return;
     }
+    var shown = activeFilter
+      ? data.photos.filter(function(p){ return photoMatchesFilter(p, activeFilter); })
+      : data.photos;
+    if (!shown.length){
+      boardView.innerHTML = '<div class="empty"><div class="big">No matching looks</div>' +
+        'None of your photos have pieces that match this filter yet.</div>';
+      return;
+    }
     var html = '<div class="board">';
-    data.photos.forEach(function(p){
-      var matches = activeFilter ? photoMatchesFilter(p, activeFilter) : true;
-      var cls = 'card';
-      if (activeFilter) cls += matches ? ' matched' : ' dimmed';
+    shown.forEach(function(p){
       var scenarioNames = p.scenarioIds.map(function(id){
         var s = data.scenarios.find(function(x){ return x.id === id; });
         return s ? s.name : null;
       }).filter(Boolean);
-      html += '<div class="'+cls+'" data-id="'+p.id+'">' +
+      html += '<div class="card" data-id="'+p.id+'">' +
         '<img src="'+p.dataUrl+'" alt="">' +
         (p.tags.length ? '<span class="badge">'+p.tags.length+' tagged</span>' : '') +
         (scenarioNames.length ? '<div class="scenarios">'+scenarioNames.map(function(n){ return '<span>'+escapeHtml(n)+'</span>'; }).join('')+'</div>' : '') +
         '</div>';
     });
-    html += '<div class="add-card" id="boardAdd"><span class="plus">+</span>Add a photo</div>';
+    if (!activeFilter) html += '<div class="add-card" id="boardAdd"><span class="plus">+</span>Add a photo</div>';
     html += '</div>';
     boardView.innerHTML = html;
-    document.getElementById('boardAdd').addEventListener('click', openFilePicker);
+    var addBtn = document.getElementById('boardAdd');
+    if (addBtn) addBtn.addEventListener('click', openFilePicker);
     boardView.querySelectorAll('.card').forEach(function(el){
       el.addEventListener('click', function(){ openDetail(el.getAttribute('data-id')); });
     });
@@ -755,30 +1444,83 @@
   // ---------- Wardrobe ----------
   var selectedItemIds = [];
   var selectMode = 'any';
+  var wardrobeSeasonFilter = [];
+  var wardrobeCategoryFilter = [];
+  var wardrobeSearchTerm = '';
+  var editingLinkId = null;
 
+  // The search box lives outside #wardrobeBody so it keeps focus while you type.
   function renderWardrobe(){
     if (data.items.length === 0){
       wardrobeView.innerHTML = '<div class="empty"><div class="big">Nothing tagged yet</div>' +
         'Tag a few pieces on the Board and they\'ll collect here, ready to mark as owned or on the list to buy.</div>';
       return;
     }
-    var sorted = data.items.slice().sort(function(a,b){ return a.name.localeCompare(b.name); });
-    var html = '<div class="wlist">';
-    sorted.forEach(function(it){
-      var count = itemPhotoCount(it.id);
-      var picked = selectedItemIds.indexOf(it.id) !== -1;
-      html += '<div class="witem">' +
-        '<div class="pick '+(picked?'on':'')+'" data-id="'+it.id+'">'+(picked?'✓':'')+'</div>' +
-        '<button class="name-btn" data-id="'+it.id+'">'+escapeHtml(it.name)+
-          '<span class="count">'+count+' look'+(count===1?'':'s')+'</span></button>' +
-        '<div class="status-toggle">' +
-          '<button class="own '+(it.status==='own'?'on':'')+'" data-id="'+it.id+'" data-status="own">Own</button>' +
-          '<button class="buy '+(it.status==='buy'?'on':'')+'" data-id="'+it.id+'" data-status="buy">To buy</button>' +
-        '</div>' +
-        '<button class="del" data-id="'+it.id+'" title="Remove item">✕</button>' +
-      '</div>';
+    if (!document.getElementById('wardrobeSearch')){
+      wardrobeView.innerHTML = '<input type="search" id="wardrobeSearch" class="wardrobe-search" placeholder="Search your wardrobe — e.g. navy" autocomplete="off">' +
+        '<div id="wardrobeBody"></div>';
+      var si = document.getElementById('wardrobeSearch');
+      si.value = wardrobeSearchTerm;
+      si.addEventListener('input', function(){ wardrobeSearchTerm = si.value; renderWardrobeBody(); });
+    }
+    renderWardrobeBody();
+  }
+
+  function renderWardrobeBody(){
+    var body = document.getElementById('wardrobeBody');
+    if (!body) return;
+    var terms = wardrobeSearchTerm.toLowerCase().split(/\s+/).filter(Boolean);
+    var visible = data.items.filter(function(it){
+      var hay = (it.name + ' ' + (it.category ? categoryLabel(it.category) : '')).toLowerCase();
+      if (!terms.every(function(t){ return hay.indexOf(t) !== -1; })) return false;
+      if (wardrobeSeasonFilter.length && !it.seasons.some(function(s){ return wardrobeSeasonFilter.indexOf(s) !== -1; })) return false;
+      if (wardrobeCategoryFilter.length && wardrobeCategoryFilter.indexOf(it.category) === -1) return false;
+      return true;
     });
-    html += '</div>';
+    var sorted = visible.slice().sort(function(a,b){ return a.name.localeCompare(b.name); });
+    var anyFilter = terms.length > 0 || wardrobeSeasonFilter.length > 0 || wardrobeCategoryFilter.length > 0;
+
+    var html = '<div class="chip-row">' + CATEGORIES.map(function(c){
+      var on = wardrobeCategoryFilter.indexOf(c.key) !== -1;
+      return '<button type="button" class="chip-btn'+(on?' on':'')+'" data-key="'+c.key+'">'+c.icon+' '+c.label+'</button>';
+    }).join('') + '</div>';
+    html += '<div class="season-filter"><span class="label">Season</span>' + SEASONS.map(function(s){
+      var on = wardrobeSeasonFilter.indexOf(s.key) !== -1;
+      return '<button type="button" class="season-btn'+(on?' on':'')+'" data-key="'+s.key+'" title="'+s.label+'">'+s.icon+'</button>';
+    }).join('') + '</div>';
+    if (anyFilter){
+      html += '<div class="filter-actions"><span class="label">'+sorted.length+' item'+(sorted.length===1?'':'s')+'</span>' +
+        '<button type="button" class="plain-btn" id="clearWardrobeFilters">Clear</button>' +
+        (sorted.length ? '<button type="button" class="view-pill" id="viewFilteredOnBoard">View on Board</button>' : '') +
+        '</div>';
+    }
+
+    if (sorted.length === 0){
+      html += '<div class="empty">Nothing matches — try fewer filters.</div>';
+    } else {
+      html += '<div class="wlist">';
+      sorted.forEach(function(it){
+        var count = itemPhotoCount(it.id);
+        var picked = selectedItemIds.indexOf(it.id) !== -1;
+        html += '<div class="witem">' +
+          '<div class="row-top">' +
+            '<div class="pick '+(picked?'on':'')+'" data-id="'+it.id+'">'+(picked?'✓':'')+'</div>' +
+            '<button class="name-btn" data-id="'+it.id+'">'+escapeHtml(it.name)+
+              '<span class="count">'+count+' look'+(count===1?'':'s')+(it.category ? ' · ' + categoryLabel(it.category) : '')+'</span></button>' +
+            '<button class="del" data-id="'+it.id+'" title="Remove item">✕</button>' +
+          '</div>' +
+          '<div class="row-bottom">' +
+            '<div class="season-row" data-item="'+it.id+'"></div>' +
+            '<div class="status-toggle">' +
+              '<button class="own '+(it.status==='own'?'on':'')+'" data-id="'+it.id+'" data-status="own">Own</button>' +
+              '<button class="buy '+(it.status==='buy'?'on':'')+'" data-id="'+it.id+'" data-status="buy">To buy</button>' +
+            '</div>' +
+            (it.status === 'buy' ? '<div class="buy-link" data-link-item="'+it.id+'"></div>' : '') +
+          '</div>' +
+        '</div>';
+      });
+      html += '</div>';
+    }
     html += '<div class="selectbar" id="selectbar">' +
       '<span id="selectCount"></span>' +
       '<div class="mode-toggle">' +
@@ -787,29 +1529,82 @@
       '</div>' +
       '<button class="view" id="viewSelected">View looks</button>' +
     '</div>';
-    wardrobeView.innerHTML = html;
+    body.innerHTML = html;
 
-    wardrobeView.querySelectorAll('.pick').forEach(function(b){
+    // Filters
+    body.querySelectorAll('.chip-row .chip-btn').forEach(function(b){
+      b.addEventListener('click', function(){
+        var key = b.getAttribute('data-key');
+        var idx = wardrobeCategoryFilter.indexOf(key);
+        if (idx === -1) wardrobeCategoryFilter.push(key); else wardrobeCategoryFilter.splice(idx, 1);
+        renderWardrobeBody();
+      });
+    });
+    body.querySelectorAll('.season-filter .season-btn').forEach(function(b){
+      b.addEventListener('click', function(){
+        var key = b.getAttribute('data-key');
+        var idx = wardrobeSeasonFilter.indexOf(key);
+        if (idx === -1) wardrobeSeasonFilter.push(key); else wardrobeSeasonFilter.splice(idx, 1);
+        renderWardrobeBody();
+      });
+    });
+    var clearBtn = document.getElementById('clearWardrobeFilters');
+    if (clearBtn) clearBtn.addEventListener('click', function(){
+      wardrobeSeasonFilter = [];
+      wardrobeCategoryFilter = [];
+      wardrobeSearchTerm = '';
+      var si = document.getElementById('wardrobeSearch');
+      if (si) si.value = '';
+      renderWardrobeBody();
+    });
+    var viewBtn = document.getElementById('viewFilteredOnBoard');
+    if (viewBtn) viewBtn.addEventListener('click', function(){
+      var parts = [];
+      if (terms.length) parts.push('\u201C' + wardrobeSearchTerm.trim() + '\u201D');
+      wardrobeCategoryFilter.forEach(function(k){ parts.push(categoryLabel(k)); });
+      wardrobeSeasonFilter.forEach(function(k){ parts.push(seasonLabel(k)); });
+      filterByVisibleItems(sorted.map(function(i){ return i.id; }), parts.join(' · '));
+    });
+
+    // Per-item season toggles
+    body.querySelectorAll('.season-row').forEach(function(row){
+      var itemId = row.getAttribute('data-item');
+      var it = data.items.find(function(i){ return i.id === itemId; });
+      renderSeasonIcons(row, function(){ return it.seasons; }, function(key){
+        var idx = it.seasons.indexOf(key);
+        if (idx === -1) it.seasons.push(key); else it.seasons.splice(idx, 1);
+        saveMeta();
+      });
+    });
+
+    // Buy-link editor per item
+    body.querySelectorAll('.buy-link').forEach(function(el){
+      var itemId = el.getAttribute('data-link-item');
+      var it = data.items.find(function(i){ return i.id === itemId; });
+      renderBuyLink(el, it);
+    });
+
+    body.querySelectorAll('.pick').forEach(function(b){
       b.addEventListener('click', function(){
         var id = b.getAttribute('data-id');
         var idx = selectedItemIds.indexOf(id);
         if (idx === -1) selectedItemIds.push(id); else selectedItemIds.splice(idx,1);
-        renderWardrobe();
+        renderWardrobeBody();
       });
     });
-    wardrobeView.querySelectorAll('.name-btn').forEach(function(b){
+    body.querySelectorAll('.name-btn').forEach(function(b){
       b.addEventListener('click', function(){ filterByItem([b.getAttribute('data-id')], 'any'); });
     });
-    wardrobeView.querySelectorAll('.status-toggle button').forEach(function(b){
+    body.querySelectorAll('.status-toggle button').forEach(function(b){
       b.addEventListener('click', function(){
         var it = data.items.find(function(i){ return i.id === b.getAttribute('data-id'); });
         var status = b.getAttribute('data-status');
         it.status = (it.status === status) ? null : status;
         saveMeta();
-        renderWardrobe();
+        renderWardrobeBody();
       });
     });
-    wardrobeView.querySelectorAll('.del').forEach(function(b){
+    body.querySelectorAll('.del').forEach(function(b){
       b.addEventListener('click', function(){
         var id = b.getAttribute('data-id');
         if (!confirm('Remove this item and its tags from every photo?')) return;
@@ -827,12 +1622,43 @@
       bar.classList.add('show');
       document.getElementById('selectCount').textContent = selectedItemIds.length + ' selected';
       bar.querySelectorAll('.mode-toggle button').forEach(function(b){
-        b.addEventListener('click', function(){ selectMode = b.getAttribute('data-mode'); renderWardrobe(); });
+        b.addEventListener('click', function(){ selectMode = b.getAttribute('data-mode'); renderWardrobeBody(); });
       });
       document.getElementById('viewSelected').addEventListener('click', function(){
-        var ids = selectedItemIds.slice();
-        filterByItem(ids, selectMode);
+        filterByItem(selectedItemIds.slice(), selectMode);
       });
+    }
+  }
+
+  function hostnameOf(url){
+    try { return new URL(url).hostname.replace(/^www\./, ''); }
+    catch(e){ return url; }
+  }
+  function renderBuyLink(el, it){
+    if (editingLinkId === it.id){
+      el.innerHTML = '<input type="url" placeholder="https://…" id="linkInput" value="'+(it.buyLink ? escapeHtml(it.buyLink) : '')+'">' +
+        '<button class="linkbtn" id="saveLinkBtn">Save</button>';
+      var input = el.querySelector('#linkInput');
+      input.focus();
+      var commit = function(){
+        var v = input.value.trim();
+        it.buyLink = v ? v : null;
+        saveMeta();
+        editingLinkId = null;
+        renderWardrobeBody();
+      };
+      input.addEventListener('keydown', function(e){
+        if (e.key === 'Enter') commit();
+        if (e.key === 'Escape'){ editingLinkId = null; renderWardrobeBody(); }
+      });
+      el.querySelector('#saveLinkBtn').addEventListener('click', commit);
+    } else if (it.buyLink){
+      el.innerHTML = '<a href="'+escapeHtml(it.buyLink)+'" target="_blank" rel="noopener">🔗 '+escapeHtml(hostnameOf(it.buyLink))+'</a>' +
+        '<button class="linkbtn" id="editLinkBtn">Edit</button>';
+      el.querySelector('#editLinkBtn').addEventListener('click', function(){ editingLinkId = it.id; renderWardrobeBody(); });
+    } else {
+      el.innerHTML = '<button class="linkbtn" id="addLinkBtn">+ Add purchase link</button>';
+      el.querySelector('#addLinkBtn').addEventListener('click', function(){ editingLinkId = it.id; renderWardrobeBody(); });
     }
   }
 
@@ -877,29 +1703,121 @@
     });
   }
 
-  // ---------- File add ----------
+  // ---------- Inspo ----------
+  var editingInspoId = null;
+
+  function normalizeLink(v){
+    v = (v || '').trim();
+    if (!v) return '';
+    if (v.charAt(0) === '@') return 'https://www.instagram.com/' + v.slice(1).replace(/\/+$/, '');
+    if (/^https?:\/\//i.test(v)) return v;
+    if (/^[A-Za-z0-9_]+$/.test(v)) return 'https://www.instagram.com/' + v;
+    return 'https://' + v;
+  }
+  function linkLabel(url){
+    try {
+      var u = new URL(url);
+      var h = u.hostname.replace(/^www\./, '');
+      if (h === 'instagram.com'){
+        var seg = u.pathname.split('/').filter(Boolean)[0];
+        return seg ? '@' + seg : 'instagram.com';
+      }
+      return h;
+    } catch(e){ return url; }
+  }
+
+  function renderInspo(){
+    var editing = editingInspoId ? data.inspo.find(function(x){ return x.id === editingInspoId; }) : null;
+    var html = '<div class="inspo-form">' +
+      '<input type="text" id="inspoName" placeholder="Name — e.g. Jane Doe" autocomplete="off" value="'+(editing ? escapeHtml(editing.name) : '')+'">' +
+      '<input type="text" id="inspoLink" placeholder="Instagram link or @handle" autocomplete="off" value="'+(editing && editing.url ? escapeHtml(editing.url) : '')+'">' +
+      '<div class="inspo-actions"><button class="primary" id="inspoSave">'+(editing ? 'Save changes' : 'Add person')+'</button>' +
+      (editing ? '<button id="inspoCancel">Cancel</button>' : '') + '</div></div>';
+    if (!data.inspo.length){
+      html += '<div class="empty"><div class="big">No inspiration yet</div>Save people whose style you love — tap a name later to jump straight to their page.</div>';
+    } else {
+      html += '<div class="wlist">';
+      data.inspo.forEach(function(x){
+        html += '<div class="witem"><div class="row-top">' +
+          (x.url
+            ? '<a class="inspo-link" href="'+escapeHtml(x.url)+'" target="_blank" rel="noopener"><span class="inspo-name">'+escapeHtml(x.name)+'</span><span class="count">'+escapeHtml(linkLabel(x.url))+' ↗</span></a>'
+            : '<div class="inspo-link"><span class="inspo-name">'+escapeHtml(x.name)+'</span></div>') +
+          '<button class="plain-btn edit-inspo" data-id="'+x.id+'">Edit</button>' +
+          '<button class="del" data-id="'+x.id+'" title="Remove">✕</button>' +
+          '</div></div>';
+      });
+      html += '</div>';
+    }
+    inspoView.innerHTML = html;
+
+    var nameEl = document.getElementById('inspoName');
+    var linkEl = document.getElementById('inspoLink');
+    var save = function(){
+      var name = nameEl.value.trim();
+      if (!name){ nameEl.focus(); return; }
+      var url = normalizeLink(linkEl.value);
+      if (editing){ editing.name = name; editing.url = url; }
+      else data.inspo.unshift({ id: uid(), name: name, url: url });
+      editingInspoId = null;
+      saveMeta();
+      renderInspo();
+    };
+    document.getElementById('inspoSave').addEventListener('click', save);
+    [nameEl, linkEl].forEach(function(el){
+      el.addEventListener('keydown', function(e){ if (e.key === 'Enter') save(); });
+    });
+    var cancel = document.getElementById('inspoCancel');
+    if (cancel) cancel.addEventListener('click', function(){ editingInspoId = null; renderInspo(); });
+    inspoView.querySelectorAll('.edit-inspo').forEach(function(b){
+      b.addEventListener('click', function(){ editingInspoId = b.getAttribute('data-id'); renderInspo(); window.scrollTo(0, 0); });
+    });
+    inspoView.querySelectorAll('.del').forEach(function(b){
+      b.addEventListener('click', function(){
+        if (!confirm('Remove this person?')) return;
+        var id = b.getAttribute('data-id');
+        data.inspo = data.inspo.filter(function(x){ return x.id !== id; });
+        saveMeta();
+        renderInspo();
+      });
+    });
+  }
+
+  // ---------- File add + crop ----------
   var fileInput = document.getElementById('fileInput');
   function openFilePicker(){ fileInput.click(); }
+
+  var uploadQueue = [];
+  var uploadBusy = false;
+
   fileInput.addEventListener('change', function(e){
     var files = Array.prototype.slice.call(e.target.files || []);
-    var remaining = files.length;
-    if (!remaining) return;
-    var base = Date.now();
-    files.forEach(function(file, idx){
-      var reader = new FileReader();
-      reader.onload = function(ev){
-        compressImage(ev.target.result, function(dataUrl){
-          var photo = { id: uid(), dataUrl: dataUrl, tags: [], scenarioIds: [], addedAt: base - idx };
-          data.photos.unshift(photo);
-          data.photos.sort(function(a,b){ return (b.addedAt||0) - (a.addedAt||0); });
-          savePhoto(photo);
-          remaining--;
-          if (remaining === 0){ fileInput.value = ''; renderBoard(); }
-        });
-      };
-      reader.readAsDataURL(file);
+    if (!files.length) return;
+    var reads = files.map(function(file){
+      return new Promise(function(resolve){
+        var r = new FileReader();
+        r.onload = function(ev){ resolve(ev.target.result); };
+        r.onerror = function(){ resolve(null); };
+        r.readAsDataURL(file);
+      });
+    });
+    Promise.all(reads).then(function(urls){
+      fileInput.value = '';
+      urls.forEach(function(u){ if (u) uploadQueue.push(u); });
+      activeFilter = null;
+      filterBar.classList.remove('show');
+      if (!uploadBusy) processNextUpload();
     });
   });
+
+  function processNextUpload(){
+    if (!uploadQueue.length){ uploadBusy = false; renderBoard(); return; }
+    uploadBusy = true;
+    openCrop(uploadQueue.shift());
+  }
+  // After tagging a new photo (or a normal photo), carry on with the next upload or refresh the board.
+  function afterOverlayClosed(){
+    if (uploadBusy) processNextUpload(); else renderBoard();
+  }
 
   function compressImage(dataUrl, cb){
     var img = new Image();
@@ -915,6 +1833,83 @@
     img.onerror = function(){ cb(dataUrl); };
     img.src = dataUrl;
   }
+
+  var cropOverlay = document.getElementById('cropOverlay');
+  var cropImg = document.getElementById('cropImg');
+  var cropBox = document.getElementById('cropBox');
+  var cropSource = null;
+  var cropRect = { x: 0, y: 0, w: 0, h: 0 };
+  var cropDrag = null;
+
+  function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+
+  function openCrop(dataUrl){
+    cropSource = dataUrl;
+    cropOverlay.classList.add('show');
+    cropImg.onload = function(){
+      cropRect = { x: 0, y: 0, w: cropImg.clientWidth, h: cropImg.clientHeight };
+      updateCropBox();
+    };
+    cropImg.src = dataUrl;
+  }
+  function updateCropBox(){
+    cropBox.style.left = cropRect.x + 'px';
+    cropBox.style.top = cropRect.y + 'px';
+    cropBox.style.width = cropRect.w + 'px';
+    cropBox.style.height = cropRect.h + 'px';
+  }
+  cropBox.addEventListener('pointerdown', function(e){
+    var h = e.target.getAttribute ? e.target.getAttribute('data-h') : null;
+    cropDrag = { mode: h || 'move', sx: e.clientX, sy: e.clientY, r: { x: cropRect.x, y: cropRect.y, w: cropRect.w, h: cropRect.h } };
+    try { cropBox.setPointerCapture(e.pointerId); } catch(err){}
+    e.preventDefault();
+  });
+  cropBox.addEventListener('pointermove', function(e){
+    if (!cropDrag) return;
+    var W = cropImg.clientWidth, H = cropImg.clientHeight, MIN = 48;
+    var dx = e.clientX - cropDrag.sx, dy = e.clientY - cropDrag.sy;
+    var s = cropDrag.r, m = cropDrag.mode;
+    var r = { x: s.x, y: s.y, w: s.w, h: s.h };
+    if (m === 'move'){
+      r.x = clamp(s.x + dx, 0, W - s.w);
+      r.y = clamp(s.y + dy, 0, H - s.h);
+    } else {
+      if (m.indexOf('l') !== -1){ var nx = clamp(s.x + dx, 0, s.x + s.w - MIN); r.w = s.x + s.w - nx; r.x = nx; }
+      if (m.indexOf('r') !== -1){ r.w = clamp(s.w + dx, MIN, W - s.x); }
+      if (m.indexOf('t') !== -1){ var ny = clamp(s.y + dy, 0, s.y + s.h - MIN); r.h = s.y + s.h - ny; r.y = ny; }
+      if (m.indexOf('b') !== -1){ r.h = clamp(s.h + dy, MIN, H - s.y); }
+    }
+    cropRect = r;
+    updateCropBox();
+  });
+  function endCropDrag(){ cropDrag = null; }
+  cropBox.addEventListener('pointerup', endCropDrag);
+  cropBox.addEventListener('pointercancel', endCropDrag);
+
+  // Save the (cropped or full) photo, then go straight into pinning it.
+  function finishCrop(dataUrl){
+    compressImage(dataUrl, function(out){
+      var photo = { id: uid(), dataUrl: out, tags: [], scenarioIds: [], addedAt: Date.now() };
+      data.photos.unshift(photo);
+      data.photos.sort(function(a,b){ return (b.addedAt||0) - (a.addedAt||0); });
+      savePhoto(photo);
+      cropOverlay.classList.remove('show');
+      openDetail(photo.id);
+    });
+  }
+  document.getElementById('cropSkip').addEventListener('click', function(){ finishCrop(cropSource); });
+  document.getElementById('cropApply').addEventListener('click', function(){
+    var img = new Image();
+    img.onload = function(){
+      var scale = img.naturalWidth / cropImg.clientWidth;
+      var sw = Math.max(1, Math.round(cropRect.w * scale)), sh = Math.max(1, Math.round(cropRect.h * scale));
+      var canvas = document.createElement('canvas');
+      canvas.width = sw; canvas.height = sh;
+      canvas.getContext('2d').drawImage(img, Math.round(cropRect.x * scale), Math.round(cropRect.y * scale), sw, sh, 0, 0, sw, sh);
+      finishCrop(canvas.toDataURL('image/jpeg', 0.92));
+    };
+    img.src = cropSource;
+  });
 
   // ---------- Detail / tagging overlay ----------
   var overlay = document.getElementById('overlay');
@@ -933,9 +1928,19 @@
   document.getElementById('closeOverlay').addEventListener('click', function(){
     overlay.classList.remove('show');
     closePopover();
-    var wasFiltering = activeFilter;
-    renderBoard();
-    if (wasFiltering) filterBar.classList.add('show');
+    afterOverlayClosed();
+  });
+
+  // Google Lens: one tap when the photo is stored online (signed in); otherwise open Lens to upload manually.
+  document.getElementById('lensBtn').addEventListener('click', function(){
+    var p = data.photos.find(function(x){ return x.id === currentPhotoId; });
+    if (!p) return;
+    if (/^https?:\/\//i.test(p.dataUrl)){
+      window.open('https://lens.google.com/uploadbyurl?url=' + encodeURIComponent(p.dataUrl), '_blank', 'noopener');
+    } else {
+      alert('Your photos are private, so Lens can\'t fetch them by itself. Lens will open now: tap the image icon there and choose this photo from your gallery.');
+      window.open('https://lens.google.com/', '_blank', 'noopener');
+    }
   });
 
   var scenarioEditor = document.getElementById('scenarioEditor');
@@ -972,10 +1977,12 @@
   }
   document.getElementById('removePhoto').addEventListener('click', function(){
     if (!confirm('Remove this photo and its tags?')) return;
+    var gone = data.photos.find(function(p){ return p.id === currentPhotoId; });
     data.photos = data.photos.filter(function(p){ return p.id !== currentPhotoId; });
-    deletePhotoRecord(currentPhotoId);
+    if (gone) deletePhotoRecord(gone);
     overlay.classList.remove('show');
-    renderBoard();
+    closePopover();
+    afterOverlayClosed();
   });
 
   function renderPins(){
@@ -1012,23 +2019,56 @@
   var openPop = null;
   function closePopover(){ if (openPop){ openPop.remove(); openPop = null; } }
 
+  // Keep a popover inside the photo: centred on the tap, flipped above if there's no room below.
+  function positionPopover(pop, px, py){
+    var w = pop.offsetWidth, h = pop.offsetHeight;
+    var sw = stage.clientWidth, sh = stage.clientHeight;
+    var left = clamp(px - w / 2, 4, Math.max(4, sw - w - 4));
+    var top = py + 14;
+    if (top + h > sh - 4) top = Math.max(4, py - h - 14);
+    pop.style.left = left + 'px';
+    pop.style.top = top + 'px';
+  }
+
   function openNewTagPopover(xPct, yPct, px, py){
     closePopover();
+    var pendingSeasons = [];
+    var pendingCategory = null;
+    var pendingStatus = null;
     var pop = document.createElement('div');
     pop.className = 'popover';
-    pop.style.left = Math.max(4, px - 100) + 'px';
-    pop.style.top = (py + 14) + 'px';
-    pop.innerHTML = '<input type="text" placeholder="e.g. Navy loafer" id="newTagInput">' +
+    pop.innerHTML = '<input type="text" placeholder="e.g. Navy loafer" id="newTagInput" autocomplete="off">' +
+      '<div class="season-row" id="newTagCategory" style="margin-top:8px;"></div>' +
+      '<div class="season-row" id="newTagSeasons" style="margin-top:6px;"></div>' +
+      '<div class="row"><button id="npOwn" style="flex:1;">Own</button><button id="npBuy" style="flex:1;">To buy</button></div>' +
       '<div class="row"><button class="primary" id="saveTagBtn">Add pin</button>' +
       '<button id="cancelTagBtn">Cancel</button></div>';
     stage.appendChild(pop);
     openPop = pop;
     var input = pop.querySelector('#newTagInput');
+    var ownBtn = pop.querySelector('#npOwn');
+    var buyBtn = pop.querySelector('#npBuy');
+    renderCategoryIcons(pop.querySelector('#newTagCategory'), function(){ return pendingCategory; }, function(key){ pendingCategory = key; }, true);
+    renderSeasonIcons(pop.querySelector('#newTagSeasons'), function(){ return pendingSeasons; }, function(key){
+      var idx = pendingSeasons.indexOf(key);
+      if (idx === -1) pendingSeasons.push(key); else pendingSeasons.splice(idx, 1);
+    }, true);
+    function setStatus(s){
+      pendingStatus = (pendingStatus === s) ? null : s;
+      ownBtn.className = pendingStatus === 'own' ? 'primary' : '';
+      buyBtn.className = pendingStatus === 'buy' ? 'primary' : '';
+    }
+    ownBtn.addEventListener('click', function(){ setStatus('own'); });
+    buyBtn.addEventListener('click', function(){ setStatus('buy'); });
+    positionPopover(pop, px, py);
     input.focus();
     function commit(){
       var name = input.value.trim();
       if (!name) { closePopover(); return; }
       var item = findOrCreateItem(name);
+      pendingSeasons.forEach(function(k){ if (item.seasons.indexOf(k) === -1) item.seasons.push(k); });
+      if (pendingCategory) item.category = pendingCategory;
+      if (pendingStatus) item.status = pendingStatus;
       var p = data.photos.find(function(x){ return x.id === currentPhotoId; });
       p.tags.push({ id: uid(), itemId: item.id, x: xPct, y: yPct });
       saveMeta();
@@ -1045,16 +2085,25 @@
     closePopover();
     var pop = document.createElement('div');
     pop.className = 'popover';
-    pop.style.left = (parseFloat(pinEl.style.left)/100 * stage.clientWidth - 100) + 'px';
-    pop.style.top = (parseFloat(pinEl.style.top)/100 * stage.clientHeight + 14) + 'px';
     pop.innerHTML = '<div style="font-family:var(--font-display);font-size:15px;">'+escapeHtml(item.name)+'</div>' +
+      '<div class="season-row" id="pinCategory" style="margin:8px 0 6px;"></div>' +
+      '<div class="season-row" id="pinSeasons" style="margin-bottom:8px;"></div>' +
       '<div class="row">' +
-        '<button class="'+(item.status==='own'?'primary':'')+'" id="pinOwn">Own</button>' +
-        '<button class="'+(item.status==='buy'?'primary':'')+'" id="pinBuy">To buy</button>' +
+        '<button class="'+(item.status==='own'?'primary':'')+'" id="pinOwn" style="flex:1;">Own</button>' +
+        '<button class="'+(item.status==='buy'?'primary':'')+'" id="pinBuy" style="flex:1;">To buy</button>' +
       '</div>' +
       '<button class="del-tag" id="pinDel">Remove this pin</button>';
     stage.appendChild(pop);
     openPop = pop;
+    renderCategoryIcons(pop.querySelector('#pinCategory'), function(){ return item.category; }, function(key){
+      item.category = key;
+      saveMeta();
+    }, true);
+    renderSeasonIcons(pop.querySelector('#pinSeasons'), function(){ return item.seasons; }, function(key){
+      var idx = item.seasons.indexOf(key);
+      if (idx === -1) item.seasons.push(key); else item.seasons.splice(idx, 1);
+      saveMeta();
+    }, true);
     pop.querySelector('#pinOwn').addEventListener('click', function(){
       item.status = item.status === 'own' ? null : 'own'; saveMeta(); renderPins(); closePopover();
     });
@@ -1066,10 +2115,166 @@
       p.tags = p.tags.filter(function(t){ return t.id !== tag.id; });
       savePhoto(p); closePopover(); renderPins();
     });
+    positionPopover(pop,
+      parseFloat(pinEl.style.left) / 100 * stage.clientWidth,
+      parseFloat(pinEl.style.top) / 100 * stage.clientHeight);
   }
 
-  // ---------- Init ----------
-  load().then(function(){ showTab('board'); });
+  // ---------- Google account ----------
+  var authScreen = document.getElementById('authScreen');
+  var authStatus = document.getElementById('authStatus');
+  var accountBar = document.getElementById('accountBar');
+  var accountAvatar = document.getElementById('accountAvatar');
+  var accountName = document.getElementById('accountName');
+  var syncStatusEl = document.getElementById('syncStatus');
+  var reconnectBtn = document.getElementById('reconnectBtn');
+  var signInBtn = document.getElementById('signInBtn');
+  var signOutBtn = document.getElementById('signOutBtn');
+
+  function showAuthScreen(show){ authScreen.style.display = show ? 'flex' : 'none'; }
+
+  function storeToken(token, expiresIn){
+    try {
+      localStorage.setItem(TOKEN_KEY, JSON.stringify({ t: token, exp: Date.now() + (expiresIn || 3600) * 1000 - 60000 }));
+    } catch(e){}
+    clearTimeout(expiryTimer);
+    expiryTimer = setTimeout(function(){ setSyncStatus('paused'); }, Math.max(1000, (expiresIn || 3600) * 1000 - 60000));
+  }
+  function getToken(){
+    try {
+      var v = JSON.parse(localStorage.getItem(TOKEN_KEY) || 'null');
+      if (v && v.exp > Date.now()) return v.t;
+    } catch(e){}
+    return null;
+  }
+  function clearToken(){ try { localStorage.removeItem(TOKEN_KEY); } catch(e){} }
+  var expiryTimer = null;
+
+  function cachedUser(){
+    try { return JSON.parse(localStorage.getItem(USER_KEY) || 'null'); } catch(e){ return null; }
+  }
+  async function fetchUserinfo(token){
+    try {
+      var res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + token } });
+      if (!res.ok) return;
+      var j = await res.json();
+      localStorage.setItem(USER_KEY, JSON.stringify({ name: j.name || j.email || '', picture: j.picture || '' }));
+      renderAccountBar();
+    } catch(e){}
+  }
+
+  var syncState = 'idle';
+  var syncDetail = '';
+  function setSyncStatus(state, detail){
+    syncState = state;
+    syncDetail = detail || '';
+    renderAccountBar();
+  }
+  function renderAccountBar(){
+    if (!DRIVE_ENABLED){ accountBar.classList.remove('show'); return; }
+    accountBar.classList.add('show');
+    var signedIn = !!localStorage.getItem(SIGNED_KEY);
+    var u = cachedUser();
+    accountName.textContent = signedIn && u ? u.name : '';
+    accountAvatar.src = signedIn && u && u.picture ? u.picture : '';
+    accountAvatar.style.display = signedIn && u && u.picture ? '' : 'none';
+    signOutBtn.style.display = signedIn ? '' : 'none';
+    signInBtn.style.display = signedIn ? 'none' : '';
+    var text = '', showReconnect = false, reconnectLabel = 'Reconnect';
+    if (signedIn){
+      if (syncState === 'syncing') text = syncDetail ? 'Syncing — ' + syncDetail : 'Syncing…';
+      else if (syncState === 'ok') text = 'Saved to Drive ✓';
+      else if (syncState === 'error'){ text = 'Sync problem'; showReconnect = true; reconnectLabel = 'Retry'; }
+      else if (syncState === 'paused' || !getToken()){ text = 'Sync paused'; showReconnect = true; }
+    }
+    syncStatusEl.textContent = text;
+    reconnectBtn.textContent = reconnectLabel;
+    reconnectBtn.style.display = showReconnect ? '' : 'none';
+  }
+
+  // Sign-in uses Google's redirect flow: leave for Google, come straight back with a token in the URL.
+  function redirectUri(){ return location.origin + location.pathname.replace(/index\.html$/, ''); }
+  function startSignIn(){
+    var state = uid() + uid();
+    try { localStorage.setItem(STATE_KEY, state); } catch(e){}
+    location.href = 'https://accounts.google.com/o/oauth2/v2/auth' +
+      '?client_id=' + encodeURIComponent(CLIENT_ID) +
+      '&redirect_uri=' + encodeURIComponent(redirectUri()) +
+      '&response_type=token' +
+      '&scope=' + encodeURIComponent(SCOPES) +
+      '&state=' + encodeURIComponent(state) +
+      '&include_granted_scopes=true';
+  }
+  function consumeOAuthReturn(){
+    var h = location.hash || '';
+    if (h.indexOf('access_token=') === -1 && h.indexOf('error=') === -1) return null;
+    var params = new URLSearchParams(h.replace(/^#/, ''));
+    try { history.replaceState(null, '', location.pathname + location.search); } catch(e){}
+    var expect = null;
+    try { expect = localStorage.getItem(STATE_KEY); localStorage.removeItem(STATE_KEY); } catch(e){}
+    if (params.get('error') || !expect || params.get('state') !== expect) return { error: params.get('error') || 'state' };
+    return { token: params.get('access_token'), expiresIn: parseInt(params.get('expires_in') || '3600', 10) };
+  }
+
+  // Re-draw whichever tab is showing after a sync pulled in changes (without disturbing a form being typed in)
+  function refreshCurrentView(){
+    var ae = document.activeElement;
+    if (currentTab === 'inspo' && ae && inspoView.contains(ae) && ae.tagName === 'INPUT') return;
+    showTab(currentTab);
+  }
+
+  document.getElementById('googleSignIn').addEventListener('click', function(){
+    authStatus.textContent = 'Opening Google…';
+    startSignIn();
+  });
+  reconnectBtn.addEventListener('click', function(){
+    if (syncState === 'error' && getToken()) runSync(); else startSignIn();
+  });
+  signInBtn.addEventListener('click', startSignIn);
+  document.getElementById('skipSignIn').addEventListener('click', function(){
+    showAuthScreen(false);
+    renderAccountBar();
+    load().then(function(){ showTab('board'); });
+  });
+  signOutBtn.addEventListener('click', async function(){
+    if (!confirm('Sign out? This clears the copy on this device. Everything stays safe in your Google Drive folder, and comes back when you sign in again.')) return;
+    try { localStorage.removeItem(SIGNED_KEY); localStorage.removeItem(USER_KEY); } catch(e){}
+    clearToken();
+    clearTimeout(syncTimer);
+    await idbClear('photos').catch(function(){});
+    await idbClear('meta').catch(function(){});
+    data = emptyData();
+    setSyncStatus('idle');
+    showAuthScreen(true);
+    showTab('board');
+  });
+
+  // ---------- Start-up ----------
+  if (!DRIVE_ENABLED){
+    // No Google client ID configured yet — run fully on this device, same as before.
+    showAuthScreen(false);
+    renderAccountBar();
+    load().then(function(){ showTab('board'); });
+  } else {
+    var ret = consumeOAuthReturn();
+    if (ret && ret.token){
+      storeToken(ret.token, ret.expiresIn);
+      try { localStorage.setItem(SIGNED_KEY, '1'); } catch(e){}
+    }
+    if (ret && ret.error) authStatus.textContent = 'Sign-in didn\'t complete — please try again.';
+    if (localStorage.getItem(SIGNED_KEY)){
+      showAuthScreen(false);
+      renderAccountBar();
+      load().then(function(){
+        showTab('board');
+        var tk = getToken();
+        if (tk){ fetchUserinfo(tk); runSync(); } else setSyncStatus('paused');
+      });
+    } else {
+      showAuthScreen(true);
+      renderAccountBar();
+    }
+  }
 })();
 </script>
 </body>
