@@ -808,7 +808,7 @@
   // ---- Google Drive setup ----
   // Paste your OAuth Client ID here (Google Cloud console > APIs & Services > Credentials).
   // It is safe to publish: it only identifies the app, it is not a password.
-  var CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+  var CLIENT_ID = '101015241126-oibkrc63jbt8f5oa65455pemqgu24fep.apps.googleusercontent.com';
   var DRIVE_ENABLED = CLIENT_ID.indexOf('YOUR_') !== 0;
   var SCOPES = 'https://www.googleapis.com/auth/drive.file openid email profile';
   var TOKEN_KEY = 'the-edit-drive-token';
@@ -957,9 +957,32 @@
     if (!res.ok){
       var err = new Error('Drive ' + res.status);
       err.status = res.status;
+      if (res.status === 403){
+        try {
+          var body = await res.clone().json();
+          var reasons = (body.error && body.error.errors || []).map(function(e){ return e.reason; });
+          if (reasons.indexOf('storageQuotaExceeded') !== -1) err.quotaFull = true;
+        } catch(e2){}
+      }
       throw err;
     }
     return res;
+  }
+  // Checked once per sign-in, not on every sync — about.get is a separate quota-counted call.
+  var quotaChecked = false;
+  async function checkStorageQuota(token){
+    if (quotaChecked) return;
+    quotaChecked = true;
+    try {
+      var res = await driveFetch(token, 'https://www.googleapis.com/drive/v3/about?fields=storageQuota');
+      var j = await res.json();
+      var q = j.storageQuota || {};
+      if (!q.limit) return; // unlimited plan — nothing useful to show
+      var used = parseInt(q.usage, 10), limit = parseInt(q.limit, 10);
+      var pct = Math.round((used / limit) * 100);
+      if (pct >= 90) driveQuotaWarning = pct + '% of your Drive storage is used';
+      else driveQuotaWarning = '';
+    } catch(e){ /* non-critical — skip silently */ }
   }
   async function driveFindOne(token, q, fields){
     var res = await driveFetch(token, API + '?q=' + encodeURIComponent(q) +
@@ -1162,6 +1185,7 @@
     clearTimeout(syncTimer);
     syncTimer = setTimeout(runSync, 1500);
   }
+  var driveQuotaWarning = '';
   async function runSync(){
     if (!DRIVE_ENABLED) return;
     if (syncing){ syncAgain = true; return; }
@@ -1171,10 +1195,12 @@
     setSyncStatus('syncing');
     try {
       await syncWithDrive(token);
+      await checkStorageQuota(token);
       setSyncStatus('ok');
     } catch(e){
       console.error(e);
-      if (e && e.status === 401){ clearToken(); setSyncStatus('paused'); }
+      if (e && e.quotaFull) setSyncStatus('full');
+      else if (e && e.status === 401){ clearToken(); setSyncStatus('paused'); }
       else setSyncStatus('error');
     }
     syncing = false;
@@ -1447,6 +1473,7 @@
   var wardrobeSeasonFilter = [];
   var wardrobeCategoryFilter = [];
   var wardrobeSearchTerm = '';
+  var wardrobeStatusFilter = ['own', 'buy']; // both on by default = no filtering
   var editingLinkId = null;
 
   // The search box lives outside #wardrobeBody so it keeps focus while you type.
@@ -1475,12 +1502,19 @@
       if (!terms.every(function(t){ return hay.indexOf(t) !== -1; })) return false;
       if (wardrobeSeasonFilter.length && !it.seasons.some(function(s){ return wardrobeSeasonFilter.indexOf(s) !== -1; })) return false;
       if (wardrobeCategoryFilter.length && wardrobeCategoryFilter.indexOf(it.category) === -1) return false;
+      // Both Own and To buy selected = show everything, including unmarked items.
+      // Narrowed to just one = show only items with that status.
+      if (wardrobeStatusFilter.length === 1 && it.status !== wardrobeStatusFilter[0]) return false;
       return true;
     });
     var sorted = visible.slice().sort(function(a,b){ return a.name.localeCompare(b.name); });
-    var anyFilter = terms.length > 0 || wardrobeSeasonFilter.length > 0 || wardrobeCategoryFilter.length > 0;
+    var anyFilter = terms.length > 0 || wardrobeSeasonFilter.length > 0 || wardrobeCategoryFilter.length > 0 || wardrobeStatusFilter.length === 1;
 
-    var html = '<div class="chip-row">' + CATEGORIES.map(function(c){
+    var html = '<div class="season-filter"><span class="label">Status</span>' +
+      '<button type="button" class="chip-btn status-filter-btn'+(wardrobeStatusFilter.indexOf('own')!==-1?' on':'')+'" data-status="own">Own</button>' +
+      '<button type="button" class="chip-btn status-filter-btn'+(wardrobeStatusFilter.indexOf('buy')!==-1?' on':'')+'" data-status="buy">To buy</button>' +
+      '</div>';
+    html += '<div class="chip-row">' + CATEGORIES.map(function(c){
       var on = wardrobeCategoryFilter.indexOf(c.key) !== -1;
       return '<button type="button" class="chip-btn'+(on?' on':'')+'" data-key="'+c.key+'">'+c.icon+' '+c.label+'</button>';
     }).join('') + '</div>';
@@ -1548,10 +1582,25 @@
         renderWardrobeBody();
       });
     });
+    body.querySelectorAll('.status-filter-btn').forEach(function(b){
+      b.addEventListener('click', function(){
+        var key = b.getAttribute('data-status');
+        var idx = wardrobeStatusFilter.indexOf(key);
+        if (idx !== -1){
+          // Don't allow dropping to zero selected — snap back to "show everything" instead.
+          if (wardrobeStatusFilter.length === 1) wardrobeStatusFilter = ['own', 'buy'];
+          else wardrobeStatusFilter.splice(idx, 1);
+        } else {
+          wardrobeStatusFilter.push(key);
+        }
+        renderWardrobeBody();
+      });
+    });
     var clearBtn = document.getElementById('clearWardrobeFilters');
     if (clearBtn) clearBtn.addEventListener('click', function(){
       wardrobeSeasonFilter = [];
       wardrobeCategoryFilter = [];
+      wardrobeStatusFilter = ['own', 'buy'];
       wardrobeSearchTerm = '';
       var si = document.getElementById('wardrobeSearch');
       if (si) si.value = '';
@@ -1561,6 +1610,7 @@
     if (viewBtn) viewBtn.addEventListener('click', function(){
       var parts = [];
       if (terms.length) parts.push('\u201C' + wardrobeSearchTerm.trim() + '\u201D');
+      if (wardrobeStatusFilter.length === 1) parts.push(wardrobeStatusFilter[0] === 'own' ? 'Own' : 'To buy');
       wardrobeCategoryFilter.forEach(function(k){ parts.push(categoryLabel(k)); });
       wardrobeSeasonFilter.forEach(function(k){ parts.push(seasonLabel(k)); });
       filterByVisibleItems(sorted.map(function(i){ return i.id; }), parts.join(' · '));
@@ -2183,7 +2233,8 @@
     var text = '', showReconnect = false, reconnectLabel = 'Reconnect';
     if (signedIn){
       if (syncState === 'syncing') text = syncDetail ? 'Syncing — ' + syncDetail : 'Syncing…';
-      else if (syncState === 'ok') text = 'Saved to Drive ✓';
+      else if (syncState === 'ok') text = driveQuotaWarning ? 'Saved to Drive ✓ — ' + driveQuotaWarning : 'Saved to Drive ✓';
+      else if (syncState === 'full'){ text = 'Google Drive is full — free up space, then tap Retry'; showReconnect = true; reconnectLabel = 'Retry'; }
       else if (syncState === 'error'){ text = 'Sync problem'; showReconnect = true; reconnectLabel = 'Retry'; }
       else if (syncState === 'paused' || !getToken()){ text = 'Sync paused'; showReconnect = true; }
     }
@@ -2228,7 +2279,7 @@
     startSignIn();
   });
   reconnectBtn.addEventListener('click', function(){
-    if (syncState === 'error' && getToken()) runSync(); else startSignIn();
+    if ((syncState === 'error' || syncState === 'full') && getToken()) runSync(); else startSignIn();
   });
   signInBtn.addEventListener('click', startSignIn);
   document.getElementById('skipSignIn').addEventListener('click', function(){
@@ -2241,6 +2292,8 @@
     try { localStorage.removeItem(SIGNED_KEY); localStorage.removeItem(USER_KEY); } catch(e){}
     clearToken();
     clearTimeout(syncTimer);
+    quotaChecked = false;
+    driveQuotaWarning = '';
     await idbClear('photos').catch(function(){});
     await idbClear('meta').catch(function(){});
     data = emptyData();
