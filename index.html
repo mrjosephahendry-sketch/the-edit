@@ -148,6 +148,23 @@
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 14px;
   }
+
+  .cols-toggle { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+  .cols-toggle .label { font-size: 12px; color: var(--ink-soft); margin-right: 2px; }
+  .cols-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink);
+    font-family: var(--font-body); font-size: 12px; font-weight: 600; cursor: pointer;
+  }
+  .cols-btn.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  @media (min-width: 641px) { .cols-toggle { display: none; } }
+  @media (max-width: 640px) {
+    .board { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    body.cols-3 .board { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    body.cols-4 .board { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    body.cols-3 .card .badge, body.cols-4 .card .badge { font-size: 9px; padding: 1px 5px; }
+    body.cols-4 .add-card .plus { font-size: 20px; }
+  }
   .card {
     position: relative;
     background: var(--surface);
@@ -1487,6 +1504,33 @@
   }
 
   // ---------- Board ----------
+  // On mobile, lets you switch the photo grid between 2/3/4 per row. Desktop ignores this
+  // (handled by auto-fill in CSS) and the control itself is hidden there.
+  var boardCols = (function(){
+    var v = parseInt(localStorage.getItem('the-edit-board-cols') || '2', 10);
+    return (v === 3 || v === 4) ? v : 2;
+  })();
+  document.body.classList.add('cols-' + boardCols);
+  function colsToggleHtml(){
+    return '<div class="cols-toggle"><span class="label">Per row</span>' +
+      [2, 3, 4].map(function(n){
+        return '<button type="button" class="cols-btn' + (boardCols === n ? ' on' : '') + '" data-cols="' + n + '">' + n + '</button>';
+      }).join('') + '</div>';
+  }
+  function wireColsToggle(container){
+    container.querySelectorAll('.cols-btn').forEach(function(b){
+      b.addEventListener('click', function(){
+        boardCols = parseInt(b.getAttribute('data-cols'), 10);
+        try { localStorage.setItem('the-edit-board-cols', String(boardCols)); } catch(e){}
+        document.body.classList.remove('cols-2', 'cols-3', 'cols-4');
+        document.body.classList.add('cols-' + boardCols);
+        container.querySelectorAll('.cols-btn').forEach(function(bb){
+          bb.classList.toggle('on', bb.getAttribute('data-cols') === String(boardCols));
+        });
+      });
+    });
+  }
+
   function renderBoard(){
     var outfitPhotos = data.photos.filter(function(p){ return p.kind !== 'item'; });
     if (outfitPhotos.length === 0 && !activeFilter){
@@ -1507,7 +1551,7 @@
         'None of your photos have pieces that match this filter yet.</div>';
       return;
     }
-    var html = '<div class="board">';
+    var html = colsToggleHtml() + '<div class="board">';
     shown.forEach(function(p){
       var scenarioNames = p.scenarioIds.map(function(id){
         var s = data.scenarios.find(function(x){ return x.id === id; });
@@ -1522,6 +1566,7 @@
     if (!activeFilter) html += '<div class="add-card" id="boardAdd"><span class="plus">+</span>Add a photo</div>';
     html += '</div>';
     boardView.innerHTML = html;
+    wireColsToggle(boardView);
     var addBtn = document.getElementById('boardAdd');
     if (addBtn) addBtn.addEventListener('click', openFilePicker);
     boardView.querySelectorAll('.card').forEach(function(el){
@@ -1548,7 +1593,7 @@
         '</div>' +
         '<div id="wardrobeModeBody"></div>';
       wardrobeView.querySelectorAll('#wardrobeModeToggle button').forEach(function(b){
-        b.addEventListener('click', function(){ wardrobeMode = b.getAttribute('data-mode'); renderWardrobeMode(); });
+        b.addEventListener('click', function(){ wardrobeMode = b.getAttribute('data-mode'); renderWardrobe(); });
       });
     }
     wardrobeView.querySelectorAll('#wardrobeModeToggle button').forEach(function(b){
@@ -1565,13 +1610,14 @@
 
   function renderWardrobeOutfits(container){
     var photos = data.photos.filter(function(p){ return p.kind !== 'item'; });
-    var html = '<div class="board">';
+    var html = colsToggleHtml() + '<div class="board">';
     photos.forEach(function(p){
       html += '<div class="card" data-id="'+p.id+'"><img src="'+p.dataUrl+'" alt="">' +
         (p.tags.length ? '<span class="badge">'+p.tags.length+' tagged</span>' : '') + '</div>';
     });
     html += '<div class="add-card" id="wardrobeOutfitAdd"><span class="plus">+</span>Add a photo</div></div>';
     container.innerHTML = html;
+    wireColsToggle(container);
     document.getElementById('wardrobeOutfitAdd').addEventListener('click', openFilePicker);
     container.querySelectorAll('.card').forEach(function(el){
       el.addEventListener('click', function(){ openDetail(el.getAttribute('data-id')); });
