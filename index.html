@@ -863,6 +863,7 @@
       <img id="stageImg" src="">
     </div>
   </div>
+  <div class="season-row photo-season-row" id="photoSeasonEditor" style="padding:12px 16px 0; justify-content:center;"></div>
   <div class="scenario-editor" id="scenarioEditor"></div>
   <footer class="remove-photo"><button id="removePhoto">Remove this photo</button></footer>
 </div>
@@ -1097,7 +1098,7 @@
       metaUpdatedAt: data.metaUpdatedAt || 0,
       items: data.items, scenarios: data.scenarios, inspo: data.inspo,
       photos: data.photos.filter(function(p){ return p.fileId; }).map(function(p){
-        return { id: p.id, fileId: p.fileId, tags: p.tags, scenarioIds: p.scenarioIds, addedAt: p.addedAt,
+        return { id: p.id, fileId: p.fileId, tags: p.tags, scenarioIds: p.scenarioIds, seasons: p.seasons || [], addedAt: p.addedAt,
                  updatedAt: p.updatedAt || 0, kind: p.kind || 'outfit', itemId: p.itemId || null };
       }),
       deleted: data.deleted.map(function(t){ return { id: t.id, fileId: t.fileId || null, done: !!t.done }; })
@@ -1143,7 +1144,7 @@
       remoteIds[rp.id] = true;
       var lp = byId[rp.id];
       if (!lp){
-        data.photos.push({ id: rp.id, dataUrl: null, tags: rp.tags || [], scenarioIds: rp.scenarioIds || [],
+        data.photos.push({ id: rp.id, dataUrl: null, tags: rp.tags || [], scenarioIds: rp.scenarioIds || [], seasons: rp.seasons || [],
                            addedAt: rp.addedAt || 0, updatedAt: rp.updatedAt || 0, fileId: rp.fileId,
                            kind: rp.kind || 'outfit', itemId: rp.itemId || null });
         changed = true;
@@ -1153,6 +1154,7 @@
         if (ru > lu){
           lp.tags = rp.tags || [];
           lp.scenarioIds = rp.scenarioIds || [];
+          lp.seasons = rp.seasons || [];
           lp.kind = rp.kind || lp.kind || 'outfit';
           lp.itemId = rp.itemId !== undefined ? rp.itemId : lp.itemId;
           lp.updatedAt = ru;
@@ -1291,6 +1293,7 @@
       p.addedAt = now - idx;
       if (!p.scenarioIds) p.scenarioIds = [];
       if (!p.tags) p.tags = [];
+      if (!p.seasons) p.seasons = [];
       if (!p.kind) p.kind = 'outfit';
       if (p.itemId === undefined) p.itemId = null;
       return idbPut('photos', p);
@@ -1307,7 +1310,7 @@
       return migrateFromLocalStorage().then(function(){ return idbGetAll('photos').catch(function(){ return []; }); });
     }).then(function(photos){
       photos.sort(function(a,b){ return (b.addedAt||0) - (a.addedAt||0); });
-      photos.forEach(function(p){ if (!p.scenarioIds) p.scenarioIds = []; if (!p.tags) p.tags = []; if (!p.kind) p.kind = 'outfit'; if (p.itemId === undefined) p.itemId = null; });
+      photos.forEach(function(p){ if (!p.scenarioIds) p.scenarioIds = []; if (!p.tags) p.tags = []; if (!p.seasons) p.seasons = []; if (!p.kind) p.kind = 'outfit'; if (p.itemId === undefined) p.itemId = null; });
       data.photos = photos;
       return idbGetAll('meta').catch(function(){ return []; });
     }).then(function(metaRows){
@@ -1403,6 +1406,12 @@
     });
     return count;
   }
+  // True if at least one of these items is actually pinned on a full outfit photo.
+  function anyHasLooks(ids){ return ids.some(function(id){ return itemPhotoCount(id) > 0; }); }
+  function warnNoLooks(){
+    alert("This item isn\u2019t pinned on any outfit yet \u2014 it only has its own reference photo, if you added one. Open a photo on the Board and tap it there to pin it.");
+  }
+
   // The dedicated "single item" photo for a wardrobe piece, if one was added that way.
   function itemThumb(itemId){
     return data.photos.find(function(p){ return p.kind === 'item' && p.itemId === itemId; });
@@ -1424,6 +1433,13 @@
   function photoMatchesFilter(p, filter){
     if (!filter) return true;
     if (filter.type === 'scenario') return p.scenarioIds.indexOf(filter.ids[0]) !== -1;
+    if (filter.type === 'season'){
+      if ((p.seasons || []).some(function(s){ return filter.ids.indexOf(s) !== -1; })) return true;
+      return p.tags.some(function(t){
+        var it = data.items.find(function(i){ return i.id === t.itemId; });
+        return it && it.seasons.some(function(s){ return filter.ids.indexOf(s) !== -1; });
+      });
+    }
     var tagItemIds = p.tags.map(function(t){ return t.itemId; });
     if (filter.mode === 'all') return filter.ids.every(function(id){ return tagItemIds.indexOf(id) !== -1; });
     return filter.ids.some(function(id){ return tagItemIds.indexOf(id) !== -1; });
@@ -1608,9 +1624,33 @@
     else renderWardrobeItems(modeBody);
   }
 
+  var wardrobeOutfitSeasonFilter = [];
+  function outfitMatchesSeasons(p){
+    if (!wardrobeOutfitSeasonFilter.length) return true;
+    if ((p.seasons || []).some(function(s){ return wardrobeOutfitSeasonFilter.indexOf(s) !== -1; })) return true;
+    return p.tags.some(function(t){
+      var it = data.items.find(function(i){ return i.id === t.itemId; });
+      return it && it.seasons.some(function(s){ return wardrobeOutfitSeasonFilter.indexOf(s) !== -1; });
+    });
+  }
   function renderWardrobeOutfits(container){
-    var photos = data.photos.filter(function(p){ return p.kind !== 'item'; });
-    var html = colsToggleHtml() + '<div class="board">';
+    var all = data.photos.filter(function(p){ return p.kind !== 'item'; });
+    var photos = all.filter(outfitMatchesSeasons);
+
+    var html = colsToggleHtml();
+    html += '<div class="season-filter"><span class="label">Season</span>' + SEASONS.map(function(s){
+      var on = wardrobeOutfitSeasonFilter.indexOf(s.key) !== -1;
+      return '<button type="button" class="outfit-season-btn'+(on?' on':'')+'" data-key="'+s.key+'" title="'+s.label+'">'+s.icon+'</button>';
+    }).join('');
+    if (wardrobeOutfitSeasonFilter.length) html += '<button type="button" class="plain-btn" id="clearOutfitSeasonFilter">Clear</button>';
+    html += '</div>';
+    if (wardrobeOutfitSeasonFilter.length && photos.length){
+      html += '<div class="filter-actions"><span class="label">'+photos.length+' look'+(photos.length===1?'':'s')+'</span>' +
+        '<button type="button" class="view-pill" id="viewOutfitSeasonOnBoard">View on Board</button></div>';
+    }
+
+    if (wardrobeOutfitSeasonFilter.length && !photos.length) html += '<div class="empty">No looks tagged for that season yet.</div>';
+    html += '<div class="board">';
     photos.forEach(function(p){
       html += '<div class="card" data-id="'+p.id+'"><img src="'+p.dataUrl+'" alt="">' +
         (p.tags.length ? '<span class="badge">'+p.tags.length+' tagged</span>' : '') + '</div>';
@@ -1621,6 +1661,22 @@
     document.getElementById('wardrobeOutfitAdd').addEventListener('click', openFilePicker);
     container.querySelectorAll('.card').forEach(function(el){
       el.addEventListener('click', function(){ openDetail(el.getAttribute('data-id')); });
+    });
+    container.querySelectorAll('.outfit-season-btn').forEach(function(b){
+      b.addEventListener('click', function(){
+        var key = b.getAttribute('data-key');
+        var idx = wardrobeOutfitSeasonFilter.indexOf(key);
+        if (idx === -1) wardrobeOutfitSeasonFilter.push(key); else wardrobeOutfitSeasonFilter.splice(idx, 1);
+        renderWardrobeOutfits(container);
+      });
+    });
+    var clearBtn = document.getElementById('clearOutfitSeasonFilter');
+    if (clearBtn) clearBtn.addEventListener('click', function(){ wardrobeOutfitSeasonFilter = []; renderWardrobeOutfits(container); });
+    var viewBtn = document.getElementById('viewOutfitSeasonOnBoard');
+    if (viewBtn) viewBtn.addEventListener('click', function(){
+      activeFilter = { type: 'season', ids: wardrobeOutfitSeasonFilter.slice() };
+      filterName.textContent = wardrobeOutfitSeasonFilter.map(seasonLabel).join(' or ');
+      showTab('board');
     });
   }
 
@@ -1758,6 +1814,7 @@
     });
     var viewBtn = document.getElementById('viewFilteredOnBoard');
     if (viewBtn) viewBtn.addEventListener('click', function(){
+      if (!anyHasLooks(sorted.map(function(i){ return i.id; }))){ warnNoLooks(); return; }
       var parts = [];
       if (terms.length) parts.push('\u201C' + wardrobeSearchTerm.trim() + '\u201D');
       if (wardrobeStatusFilter.length === 1) parts.push(wardrobeStatusFilter[0] === 'own' ? 'Own' : 'To buy');
@@ -1793,7 +1850,11 @@
       });
     });
     body.querySelectorAll('.name-btn').forEach(function(b){
-      b.addEventListener('click', function(){ filterByItem([b.getAttribute('data-id')], 'any'); });
+      b.addEventListener('click', function(){
+        var id = b.getAttribute('data-id');
+        if (!anyHasLooks([id])){ warnNoLooks(); return; }
+        filterByItem([id], 'any');
+      });
     });
     body.querySelectorAll('.status-toggle button').forEach(function(b){
       b.addEventListener('click', function(){
@@ -1825,6 +1886,7 @@
         b.addEventListener('click', function(){ selectMode = b.getAttribute('data-mode'); renderWardrobeBody(); });
       });
       document.getElementById('viewSelected').addEventListener('click', function(){
+        if (!anyHasLooks(selectedItemIds)){ warnNoLooks(); return; }
         filterByItem(selectedItemIds.slice(), selectMode);
       });
     }
@@ -2199,7 +2261,17 @@
     stageImg.src = p.dataUrl;
     overlay.classList.add('show');
     renderPins();
+    renderPhotoSeasons();
     renderScenarioEditor();
+  }
+  // Season this whole look is for — separate from any one pinned item's own season.
+  function renderPhotoSeasons(){
+    var p = data.photos.find(function(x){ return x.id === currentPhotoId; });
+    renderSeasonIcons(document.getElementById('photoSeasonEditor'), function(){ return p.seasons; }, function(key){
+      var idx = p.seasons.indexOf(key);
+      if (idx === -1) p.seasons.push(key); else p.seasons.splice(idx, 1);
+      savePhoto(p);
+    });
   }
   document.getElementById('closeOverlay').addEventListener('click', function(){
     overlay.classList.remove('show');
