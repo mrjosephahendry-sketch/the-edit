@@ -691,6 +691,20 @@
 
   .item-thumb { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: var(--surface-2); }
 
+  .viewer-stage { line-height: 0; text-align: center; }
+  .viewer-stage img { max-width: 100%; max-height: 78vh; display: inline-block; border-radius: 2px; }
+  .viewer-caption {
+    padding: 14px 20px 0; max-width: 420px; margin: 0 auto; text-align: center;
+  }
+  .viewer-caption .v-name { font-family: var(--font-display); font-size: 18px; color: #F5F2EC; margin-bottom: 10px; }
+  .viewer-caption .status-toggle { margin: 0 auto; }
+  .overlay-head .head-actions button#overlayPrev,
+  .overlay-head .head-actions button#overlayNext,
+  .overlay-head .head-actions button#viewerPrev,
+  .overlay-head .head-actions button#viewerNext { font-size: 18px; padding: 6px 12px; }
+
+  .board-filters { margin-bottom: 4px; }
+
   @media (max-width: 640px) {
     header.top { flex-direction: column; align-items: stretch; gap: 14px; }
     nav.tabs { display: flex; }
@@ -856,7 +870,12 @@
 <div class="overlay" id="overlay">
   <div class="overlay-head">
     <span class="hint">Tap a piece to pin it</span>
-    <div class="head-actions"><button id="lensBtn">Search with Lens</button><button id="closeOverlay">Done</button></div>
+    <div class="head-actions">
+      <button id="overlayPrev" title="Previous">‹</button>
+      <button id="overlayNext" title="Next">›</button>
+      <button id="lensBtn">Search with Lens</button>
+      <button id="closeOverlay">Done</button>
+    </div>
   </div>
   <div class="stage-wrap">
     <div class="stage" id="stage">
@@ -866,6 +885,22 @@
   <div class="season-row photo-season-row" id="photoSeasonEditor" style="padding:12px 16px 0; justify-content:center;"></div>
   <div class="scenario-editor" id="scenarioEditor"></div>
   <footer class="remove-photo"><button id="removePhoto">Remove this photo</button></footer>
+</div>
+
+<div class="overlay" id="viewerOverlay">
+  <div class="overlay-head">
+    <span class="hint" id="viewerCount"></span>
+    <div class="head-actions">
+      <button id="viewerPrev" title="Previous">‹</button>
+      <button id="viewerNext" title="Next">›</button>
+      <button id="viewerClose">Done</button>
+    </div>
+  </div>
+  <div class="stage-wrap">
+    <div class="viewer-stage"><img id="viewerImg" src="" alt=""></div>
+  </div>
+  <div class="viewer-caption" id="viewerCaption"></div>
+  <footer class="remove-photo"><button id="viewerRemove">Remove this photo</button></footer>
 </div>
 
 <script>
@@ -1407,9 +1442,9 @@
     return count;
   }
   // True if at least one of these items is actually pinned on a full outfit photo.
-  function anyHasLooks(ids){ return ids.some(function(id){ return itemPhotoCount(id) > 0; }); }
+  function anyHasLooks(ids){ return ids.some(function(id){ return itemPhotoCount(id) > 0 || !!itemThumb(id); }); }
   function warnNoLooks(){
-    alert("This item isn\u2019t pinned on any outfit yet \u2014 it only has its own reference photo, if you added one. Open a photo on the Board and tap it there to pin it.");
+    alert('Nothing to show yet \u2014 this item isn\u2019t pinned on any outfit and has no photo of its own.');
   }
 
   // The dedicated "single item" photo for a wardrobe piece, if one was added that way.
@@ -1441,8 +1476,18 @@
       });
     }
     var tagItemIds = p.tags.map(function(t){ return t.itemId; });
+    if (p.kind === 'item' && p.itemId) tagItemIds = tagItemIds.concat([p.itemId]);
     if (filter.mode === 'all') return filter.ids.every(function(id){ return tagItemIds.indexOf(id) !== -1; });
     return filter.ids.some(function(id){ return tagItemIds.indexOf(id) !== -1; });
+  }
+  // Season match shared by the Board's own season row and Wardrobe > Outfits.
+  function photoMatchesSeasons(p, seasonKeys){
+    if (!seasonKeys.length) return true;
+    if ((p.seasons || []).some(function(s){ return seasonKeys.indexOf(s) !== -1; })) return true;
+    return p.tags.some(function(t){
+      var it = data.items.find(function(i){ return i.id === t.itemId; });
+      return it && it.seasons.some(function(s){ return seasonKeys.indexOf(s) !== -1; });
+    });
   }
 
   // ---------- Tabs ----------
@@ -1547,6 +1592,22 @@
     });
   }
 
+  var boardSearchTerm = '';
+  var boardSeasonFilter = [];
+
+  // The list currently on screen (Board or Wardrobe > Outfits) — lets an open photo "flick"
+  // through its neighbours without closing back out to the grid each time.
+  var activePhotoList = [];
+  var activePhotoIndex = -1;
+  function openPhotoByIndex(idx){
+    if (!activePhotoList.length) return;
+    idx = ((idx % activePhotoList.length) + activePhotoList.length) % activePhotoList.length;
+    activePhotoIndex = idx;
+    var p = data.photos.find(function(x){ return x.id === activePhotoList[idx]; });
+    if (!p) return;
+    if (p.kind === 'item') openViewer(p.id); else openDetail(p.id);
+  }
+
   function renderBoard(){
     var outfitPhotos = data.photos.filter(function(p){ return p.kind !== 'item'; });
     if (outfitPhotos.length === 0 && !activeFilter){
@@ -1559,16 +1620,66 @@
       document.getElementById('emptyAdd').addEventListener('click', openFilePicker);
       return;
     }
-    var shown = activeFilter
-      ? outfitPhotos.filter(function(p){ return photoMatchesFilter(p, activeFilter); })
-      : outfitPhotos;
+    if (!document.getElementById('boardSearch')){
+      boardView.innerHTML = '<input type="search" id="boardSearch" class="wardrobe-search" placeholder="Search pinned items on a look — e.g. navy" autocomplete="off">' +
+        '<div id="boardBody"></div>';
+      var si = document.getElementById('boardSearch');
+      si.value = boardSearchTerm;
+      si.addEventListener('input', function(){ boardSearchTerm = si.value; renderBoardBody(); });
+    }
+    renderBoardBody();
+  }
+
+  function renderBoardBody(){
+    var body = document.getElementById('boardBody');
+    if (!body) return;
+    // Base pool: a filter from Wardrobe (an item, several items, a season) may reasonably include
+    // a single-item reference photo; plain unfiltered browsing stays to full outfits only.
+    var pool = activeFilter ? data.photos.slice() : data.photos.filter(function(p){ return p.kind !== 'item'; });
+    var shown = activeFilter ? pool.filter(function(p){ return photoMatchesFilter(p, activeFilter); }) : pool;
+
+    var term = boardSearchTerm.trim().toLowerCase();
+    if (term){
+      shown = shown.filter(function(p){
+        if (p.kind === 'item'){
+          var it = data.items.find(function(i){ return i.id === p.itemId; });
+          return it && it.name.toLowerCase().indexOf(term) !== -1;
+        }
+        return p.tags.some(function(t){
+          var it = data.items.find(function(i){ return i.id === t.itemId; });
+          return it && it.name.toLowerCase().indexOf(term) !== -1;
+        });
+      });
+    }
+    if (boardSeasonFilter.length) shown = shown.filter(function(p){ return photoMatchesSeasons(p, boardSeasonFilter); });
+
+    activePhotoList = shown.map(function(p){ return p.id; });
+
+    var html = '<div class="season-filter board-filters"><span class="label">Season</span>' + SEASONS.map(function(s){
+      var on = boardSeasonFilter.indexOf(s.key) !== -1;
+      return '<button type="button" class="board-season-btn'+(on?' on':'')+'" data-key="'+s.key+'" title="'+s.label+'">'+s.icon+'</button>';
+    }).join('');
+    if (boardSeasonFilter.length || term) html += '<button type="button" class="plain-btn" id="clearBoardFilters">Clear</button>';
+    html += '</div>';
+    html += colsToggleHtml();
+
     if (!shown.length){
-      boardView.innerHTML = '<div class="empty"><div class="big">No matching looks</div>' +
-        'None of your photos have pieces that match this filter yet.</div>';
+      html += '<div class="empty"><div class="big">No matching looks</div>' +
+        'Nothing pinned, searched or tagged for that season yet.</div>';
+      body.innerHTML = html;
+      wireColsToggle(body);
+      wireBoardSeasonFilter(body);
       return;
     }
-    var html = colsToggleHtml() + '<div class="board">';
+
+    html += '<div class="board">';
     shown.forEach(function(p){
+      if (p.kind === 'item'){
+        var it = data.items.find(function(i){ return i.id === p.itemId; });
+        html += '<div class="card" data-id="'+p.id+'"><img src="'+p.dataUrl+'" alt="">' +
+          '<span class="badge">'+(it ? escapeHtml(it.name) : 'Item')+'</span></div>';
+        return;
+      }
       var scenarioNames = p.scenarioIds.map(function(id){
         var s = data.scenarios.find(function(x){ return x.id === id; });
         return s ? s.name : null;
@@ -1579,14 +1690,36 @@
         (scenarioNames.length ? '<div class="scenarios">'+scenarioNames.map(function(n){ return '<span>'+escapeHtml(n)+'</span>'; }).join('')+'</div>' : '') +
         '</div>';
     });
-    if (!activeFilter) html += '<div class="add-card" id="boardAdd"><span class="plus">+</span>Add a photo</div>';
+    if (!activeFilter && !term && !boardSeasonFilter.length) html += '<div class="add-card" id="boardAdd"><span class="plus">+</span>Add a photo</div>';
     html += '</div>';
-    boardView.innerHTML = html;
-    wireColsToggle(boardView);
+    body.innerHTML = html;
+    wireColsToggle(body);
+    wireBoardSeasonFilter(body);
     var addBtn = document.getElementById('boardAdd');
     if (addBtn) addBtn.addEventListener('click', openFilePicker);
-    boardView.querySelectorAll('.card').forEach(function(el){
-      el.addEventListener('click', function(){ openDetail(el.getAttribute('data-id')); });
+    body.querySelectorAll('.card').forEach(function(el){
+      el.addEventListener('click', function(){
+        openPhotoByIndex(activePhotoList.indexOf(el.getAttribute('data-id')));
+      });
+    });
+  }
+
+  function wireBoardSeasonFilter(container){
+    container.querySelectorAll('.board-season-btn').forEach(function(b){
+      b.addEventListener('click', function(){
+        var key = b.getAttribute('data-key');
+        var idx = boardSeasonFilter.indexOf(key);
+        if (idx === -1) boardSeasonFilter.push(key); else boardSeasonFilter.splice(idx, 1);
+        renderBoardBody();
+      });
+    });
+    var clearBtn = document.getElementById('clearBoardFilters');
+    if (clearBtn) clearBtn.addEventListener('click', function(){
+      boardSeasonFilter = [];
+      boardSearchTerm = '';
+      var si = document.getElementById('boardSearch');
+      if (si) si.value = '';
+      renderBoardBody();
     });
   }
 
@@ -1625,17 +1758,10 @@
   }
 
   var wardrobeOutfitSeasonFilter = [];
-  function outfitMatchesSeasons(p){
-    if (!wardrobeOutfitSeasonFilter.length) return true;
-    if ((p.seasons || []).some(function(s){ return wardrobeOutfitSeasonFilter.indexOf(s) !== -1; })) return true;
-    return p.tags.some(function(t){
-      var it = data.items.find(function(i){ return i.id === t.itemId; });
-      return it && it.seasons.some(function(s){ return wardrobeOutfitSeasonFilter.indexOf(s) !== -1; });
-    });
-  }
   function renderWardrobeOutfits(container){
     var all = data.photos.filter(function(p){ return p.kind !== 'item'; });
-    var photos = all.filter(outfitMatchesSeasons);
+    var photos = all.filter(function(p){ return photoMatchesSeasons(p, wardrobeOutfitSeasonFilter); });
+    activePhotoList = photos.map(function(p){ return p.id; });
 
     var html = colsToggleHtml();
     html += '<div class="season-filter"><span class="label">Season</span>' + SEASONS.map(function(s){
@@ -1660,7 +1786,9 @@
     wireColsToggle(container);
     document.getElementById('wardrobeOutfitAdd').addEventListener('click', openFilePicker);
     container.querySelectorAll('.card').forEach(function(el){
-      el.addEventListener('click', function(){ openDetail(el.getAttribute('data-id')); });
+      el.addEventListener('click', function(){
+        openPhotoByIndex(activePhotoList.indexOf(el.getAttribute('data-id')));
+      });
     });
     container.querySelectorAll('.outfit-season-btn').forEach(function(b){
       b.addEventListener('click', function(){
@@ -2278,6 +2406,8 @@
     closePopover();
     afterOverlayClosed();
   });
+  document.getElementById('overlayPrev').addEventListener('click', function(){ openPhotoByIndex(activePhotoIndex - 1); });
+  document.getElementById('overlayNext').addEventListener('click', function(){ openPhotoByIndex(activePhotoIndex + 1); });
 
   // Google Lens: one tap when the photo is stored online (signed in); otherwise open Lens to upload manually.
   document.getElementById('lensBtn').addEventListener('click', function(){
@@ -2330,6 +2460,55 @@
     if (gone) deletePhotoRecord(gone);
     overlay.classList.remove('show');
     closePopover();
+    afterOverlayClosed();
+  });
+
+  // ---------- Lightweight viewer, for single-item photos (nothing to pin) ----------
+  var viewerOverlay = document.getElementById('viewerOverlay');
+  var viewerImg = document.getElementById('viewerImg');
+  var viewerCaption = document.getElementById('viewerCaption');
+  var viewerCount = document.getElementById('viewerCount');
+  var currentViewerPhotoId = null;
+
+  function openViewer(photoId){
+    currentViewerPhotoId = photoId;
+    var p = data.photos.find(function(x){ return x.id === photoId; });
+    if (!p) return;
+    viewerImg.src = p.dataUrl;
+    viewerCount.textContent = activePhotoList.length > 1 ? (activePhotoIndex + 1) + ' of ' + activePhotoList.length : '';
+    overlay.classList.remove('show');
+    viewerOverlay.classList.add('show');
+    renderViewerCaption();
+  }
+  function renderViewerCaption(){
+    var p = data.photos.find(function(x){ return x.id === currentViewerPhotoId; });
+    var it = p ? data.items.find(function(i){ return i.id === p.itemId; }) : null;
+    if (!it){ viewerCaption.innerHTML = ''; return; }
+    viewerCaption.innerHTML =
+      '<div class="v-name">'+escapeHtml(it.name)+'</div>' +
+      '<div class="status-toggle">' +
+        '<button class="own '+(it.status==='own'?'on':'')+'" id="viewerOwn">Own</button>' +
+        '<button class="buy '+(it.status==='buy'?'on':'')+'" id="viewerBuy">To buy</button>' +
+      '</div>';
+    document.getElementById('viewerOwn').addEventListener('click', function(){
+      it.status = it.status === 'own' ? null : 'own'; saveMeta(); renderViewerCaption();
+    });
+    document.getElementById('viewerBuy').addEventListener('click', function(){
+      it.status = it.status === 'buy' ? null : 'buy'; saveMeta(); renderViewerCaption();
+    });
+  }
+  document.getElementById('viewerClose').addEventListener('click', function(){
+    viewerOverlay.classList.remove('show');
+    afterOverlayClosed();
+  });
+  document.getElementById('viewerPrev').addEventListener('click', function(){ openPhotoByIndex(activePhotoIndex - 1); });
+  document.getElementById('viewerNext').addEventListener('click', function(){ openPhotoByIndex(activePhotoIndex + 1); });
+  document.getElementById('viewerRemove').addEventListener('click', function(){
+    if (!confirm('Remove this photo?')) return;
+    var gone = data.photos.find(function(p){ return p.id === currentViewerPhotoId; });
+    data.photos = data.photos.filter(function(p){ return p.id !== currentViewerPhotoId; });
+    if (gone) deletePhotoRecord(gone);
+    viewerOverlay.classList.remove('show');
     afterOverlayClosed();
   });
 
