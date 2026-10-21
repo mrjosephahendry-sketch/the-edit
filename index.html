@@ -692,6 +692,22 @@
   .item-thumb { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: var(--surface-2); }
 
   .viewer-stage { line-height: 0; text-align: center; }
+  .viewer-placeholder {
+    width: 200px; height: 200px; margin: 40px auto; border-radius: 10px;
+    background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center;
+    font-size: 72px; line-height: 1;
+  }
+  .item-tile-placeholder {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    font-size: 36px; background: var(--surface-2);
+  }
+  .corner-pick {
+    position: absolute; top: 8px; left: 8px; width: 22px; height: 22px; border-radius: 6px; z-index: 2;
+    border: 1.5px solid rgba(255,255,255,0.7); background: rgba(23,22,19,0.45);
+    display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; cursor: pointer;
+  }
+  .corner-pick.on { background: var(--buy); border-color: var(--buy); color: #211F1C; }
+  .card .badge { max-width: calc(100% - 52px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .viewer-stage img { max-width: 100%; max-height: 78vh; display: inline-block; border-radius: 2px; }
   .viewer-caption {
     padding: 14px 20px 0; max-width: 420px; margin: 0 auto; text-align: center;
@@ -861,7 +877,7 @@
       <input type="text" id="itemAddName" placeholder="e.g. Navy loafer" autocomplete="off">
       <div class="season-row" id="itemAddCategory"></div>
       <div class="season-row" id="itemAddSeasons"></div>
-      <div class="row"><button id="itemAddOwn" style="flex:1;">Own</button><button id="itemAddBuy" style="flex:1;">To buy</button></div>
+      <div class="status-toggle" style="margin:auto;"><button class="own" id="itemAddOwn">Own</button><button class="buy" id="itemAddBuy">To buy</button></div>
       <button class="primary" id="itemAddSave" style="width:100%;">Save to wardrobe</button>
     </div>
   </div>
@@ -893,14 +909,15 @@
     <div class="head-actions">
       <button id="viewerPrev" title="Previous">‹</button>
       <button id="viewerNext" title="Next">›</button>
+      <button id="viewerLensBtn">Search with Lens</button>
       <button id="viewerClose">Done</button>
     </div>
   </div>
   <div class="stage-wrap">
-    <div class="viewer-stage"><img id="viewerImg" src="" alt=""></div>
+    <div class="viewer-stage"><img id="viewerImg" src="" alt=""><div class="viewer-placeholder" id="viewerPlaceholder" style="display:none;"></div></div>
   </div>
   <div class="viewer-caption" id="viewerCaption"></div>
-  <footer class="remove-photo"><button id="viewerRemove">Remove this photo</button></footer>
+  <footer class="remove-photo"><button id="viewerRemove">Remove this photo</button><button id="viewerDeleteItem" style="margin-left:14px;">Delete this item</button></footer>
 </div>
 
 <script>
@@ -1595,17 +1612,30 @@
   var boardSearchTerm = '';
   var boardSeasonFilter = [];
 
-  // The list currently on screen (Board or Wardrobe > Outfits) — lets an open photo "flick"
-  // through its neighbours without closing back out to the grid each time.
+  // The list currently on screen — lets an open photo "flick" through its neighbours without
+  // closing back out to the grid each time. 'photos' mode (Board / Wardrobe > Outfits) walks
+  // actual photos; 'items' mode (Wardrobe > Items) walks wardrobe items, which may or may not
+  // each have a photo of their own.
+  var navMode = 'photos';
   var activePhotoList = [];
   var activePhotoIndex = -1;
+  var activeItemList = [];
+  var activeItemIndex = -1;
   function openPhotoByIndex(idx){
     if (!activePhotoList.length) return;
+    navMode = 'photos';
     idx = ((idx % activePhotoList.length) + activePhotoList.length) % activePhotoList.length;
     activePhotoIndex = idx;
     var p = data.photos.find(function(x){ return x.id === activePhotoList[idx]; });
     if (!p) return;
     if (p.kind === 'item') openViewer(p.id); else openDetail(p.id);
+  }
+  function openItemByIndex(idx){
+    if (!activeItemList.length) return;
+    navMode = 'items';
+    idx = ((idx % activeItemList.length) + activeItemList.length) % activeItemList.length;
+    activeItemIndex = idx;
+    openViewerForItem(activeItemList[idx]);
   }
 
   function renderBoard(){
@@ -1657,7 +1687,7 @@
 
     var html = '<div class="season-filter board-filters"><span class="label">Season</span>' + SEASONS.map(function(s){
       var on = boardSeasonFilter.indexOf(s.key) !== -1;
-      return '<button type="button" class="board-season-btn'+(on?' on':'')+'" data-key="'+s.key+'" title="'+s.label+'">'+s.icon+'</button>';
+      return '<button type="button" class="season-btn'+(on?' on':'')+'" data-key="'+s.key+'" title="'+s.label+'">'+s.icon+'</button>';
     }).join('');
     if (boardSeasonFilter.length || term) html += '<button type="button" class="plain-btn" id="clearBoardFilters">Clear</button>';
     html += '</div>';
@@ -1705,7 +1735,7 @@
   }
 
   function wireBoardSeasonFilter(container){
-    container.querySelectorAll('.board-season-btn').forEach(function(b){
+    container.querySelectorAll('.season-filter .season-btn').forEach(function(b){
       b.addEventListener('click', function(){
         var key = b.getAttribute('data-key');
         var idx = boardSeasonFilter.indexOf(key);
@@ -1766,7 +1796,7 @@
     var html = colsToggleHtml();
     html += '<div class="season-filter"><span class="label">Season</span>' + SEASONS.map(function(s){
       var on = wardrobeOutfitSeasonFilter.indexOf(s.key) !== -1;
-      return '<button type="button" class="outfit-season-btn'+(on?' on':'')+'" data-key="'+s.key+'" title="'+s.label+'">'+s.icon+'</button>';
+      return '<button type="button" class="season-btn'+(on?' on':'')+'" data-key="'+s.key+'" title="'+s.label+'">'+s.icon+'</button>';
     }).join('');
     if (wardrobeOutfitSeasonFilter.length) html += '<button type="button" class="plain-btn" id="clearOutfitSeasonFilter">Clear</button>';
     html += '</div>';
@@ -1790,7 +1820,7 @@
         openPhotoByIndex(activePhotoList.indexOf(el.getAttribute('data-id')));
       });
     });
-    container.querySelectorAll('.outfit-season-btn').forEach(function(b){
+    container.querySelectorAll('.season-filter .season-btn').forEach(function(b){
       b.addEventListener('click', function(){
         var key = b.getAttribute('data-key');
         var idx = wardrobeOutfitSeasonFilter.indexOf(key);
@@ -1840,6 +1870,7 @@
       return true;
     });
     var sorted = visible.slice().sort(function(a,b){ return a.name.localeCompare(b.name); });
+    activeItemList = sorted.map(function(i){ return i.id; });
     var anyFilter = terms.length > 0 || wardrobeSeasonFilter.length > 0 || wardrobeCategoryFilter.length > 0 || wardrobeStatusFilter.length === 1;
 
     var html = '<div class="season-filter"><span class="label">Status</span>' +
@@ -1864,28 +1895,19 @@
     if (sorted.length === 0){
       html += '<div class="empty">Nothing matches — try fewer filters.</div>';
     } else {
-      html += '<div class="wlist">';
+      html += colsToggleHtml() + '<div class="board">';
       sorted.forEach(function(it){
-        var count = itemPhotoCount(it.id);
         var picked = selectedItemIds.indexOf(it.id) !== -1;
         var thumb = itemThumb(it.id);
-        html += '<div class="witem">' +
-          '<div class="row-top">' +
-            (thumb ? '<img class="item-thumb" src="'+thumb.dataUrl+'" alt="">' : '') +
-            '<div class="pick '+(picked?'on':'')+'" data-id="'+it.id+'">'+(picked?'✓':'')+'</div>' +
-            '<button class="name-btn" data-id="'+it.id+'">'+escapeHtml(it.name)+
-              '<span class="count">'+count+' look'+(count===1?'':'s')+(it.category ? ' · ' + categoryLabel(it.category) : '')+'</span></button>' +
-            '<button class="del" data-id="'+it.id+'" title="Remove item">✕</button>' +
-          '</div>' +
-          '<div class="row-bottom">' +
-            '<div class="season-row" data-item="'+it.id+'"></div>' +
-            '<div class="status-toggle">' +
-              '<button class="own '+(it.status==='own'?'on':'')+'" data-id="'+it.id+'" data-status="own">Own</button>' +
-              '<button class="buy '+(it.status==='buy'?'on':'')+'" data-id="'+it.id+'" data-status="buy">To buy</button>' +
-            '</div>' +
-            (it.status === 'buy' ? '<div class="buy-link" data-link-item="'+it.id+'"></div>' : '') +
-          '</div>' +
-        '</div>';
+        var cat = it.category && CATEGORIES.find(function(c){ return c.key === it.category; });
+        html += '<div class="card item-card" data-id="'+it.id+'">' +
+          '<div class="corner-pick '+(picked?'on':'')+'" data-id="'+it.id+'">'+(picked?'✓':'')+'</div>' +
+          (thumb
+            ? '<img src="'+thumb.dataUrl+'" alt="">'
+            : '<div class="item-tile-placeholder">'+(cat ? cat.icon : defaultItemIcon)+'</div>') +
+          '<span class="badge">'+escapeHtml(it.name)+'</span>' +
+          (it.status ? '<div class="scenarios"><span>'+(it.status==='own'?'Own':'To buy')+'</span></div>' : '') +
+          '</div>';
       });
       html += '</div>';
     }
@@ -1951,58 +1973,19 @@
       filterByVisibleItems(sorted.map(function(i){ return i.id; }), parts.join(' · '));
     });
 
-    // Per-item season toggles
-    body.querySelectorAll('.season-row').forEach(function(row){
-      var itemId = row.getAttribute('data-item');
-      var it = data.items.find(function(i){ return i.id === itemId; });
-      renderSeasonIcons(row, function(){ return it.seasons; }, function(key){
-        var idx = it.seasons.indexOf(key);
-        if (idx === -1) it.seasons.push(key); else it.seasons.splice(idx, 1);
-        saveMeta();
-      });
-    });
-
-    // Buy-link editor per item
-    body.querySelectorAll('.buy-link').forEach(function(el){
-      var itemId = el.getAttribute('data-link-item');
-      var it = data.items.find(function(i){ return i.id === itemId; });
-      renderBuyLink(el, it);
-    });
-
-    body.querySelectorAll('.pick').forEach(function(b){
-      b.addEventListener('click', function(){
+    wireColsToggle(body);
+    body.querySelectorAll('.corner-pick').forEach(function(b){
+      b.addEventListener('click', function(ev){
+        ev.stopPropagation();
         var id = b.getAttribute('data-id');
         var idx = selectedItemIds.indexOf(id);
-        if (idx === -1) selectedItemIds.push(id); else selectedItemIds.splice(idx,1);
+        if (idx === -1) selectedItemIds.push(id); else selectedItemIds.splice(idx, 1);
         renderWardrobeBody();
       });
     });
-    body.querySelectorAll('.name-btn').forEach(function(b){
-      b.addEventListener('click', function(){
-        var id = b.getAttribute('data-id');
-        if (!anyHasLooks([id])){ warnNoLooks(); return; }
-        filterByItem([id], 'any');
-      });
-    });
-    body.querySelectorAll('.status-toggle button').forEach(function(b){
-      b.addEventListener('click', function(){
-        var it = data.items.find(function(i){ return i.id === b.getAttribute('data-id'); });
-        var status = b.getAttribute('data-status');
-        it.status = (it.status === status) ? null : status;
-        saveMeta();
-        renderWardrobeBody();
-      });
-    });
-    body.querySelectorAll('.del').forEach(function(b){
-      b.addEventListener('click', function(){
-        var id = b.getAttribute('data-id');
-        if (!confirm('Remove this item and its tags from every photo?')) return;
-        data.items = data.items.filter(function(i){ return i.id !== id; });
-        data.photos.forEach(function(p){ p.tags = p.tags.filter(function(t){ return t.itemId !== id; }); });
-        selectedItemIds = selectedItemIds.filter(function(x){ return x !== id; });
-        saveMeta();
-        persistAllPhotos();
-        renderWardrobe();
+    body.querySelectorAll('.item-card').forEach(function(el){
+      el.addEventListener('click', function(){
+        openItemByIndex(activeItemList.indexOf(el.getAttribute('data-id')));
       });
     });
 
@@ -2204,9 +2187,13 @@
     uploadBusy = true;
     openCrop(uploadQueue.shift());
   }
-  // After tagging a new photo (or a normal photo), carry on with the next upload or refresh the board.
+  // After tagging a new photo, carry on with the next upload. Otherwise return to wherever
+  // this photo/item was opened from, refreshed, rather than always assuming the Board.
+  var lastOpenedFromTab = 'board';
   function afterOverlayClosed(){
-    if (uploadBusy) processNextUpload(); else renderBoard();
+    if (uploadBusy) processNextUpload();
+    else if (lastOpenedFromTab === 'wardrobe') renderWardrobeMode();
+    else renderBoard();
   }
 
   function compressImage(dataUrl, cb){
@@ -2324,7 +2311,7 @@
     itemAddImg.src = p.dataUrl;
     document.getElementById('itemAddName').value = '';
     var ownBtn = document.getElementById('itemAddOwn'), buyBtn = document.getElementById('itemAddBuy');
-    ownBtn.className = ''; buyBtn.className = '';
+    ownBtn.classList.remove('on'); buyBtn.classList.remove('on');
     renderCategoryIcons(document.getElementById('itemAddCategory'), function(){ return itemAddPendingCategory; }, function(k){ itemAddPendingCategory = k; });
     renderSeasonIcons(document.getElementById('itemAddSeasons'), function(){ return itemAddPendingSeasons; }, function(k){
       var idx = itemAddPendingSeasons.indexOf(k);
@@ -2335,8 +2322,8 @@
   }
   function setItemAddStatus(s){
     itemAddPendingStatus = (itemAddPendingStatus === s) ? null : s;
-    document.getElementById('itemAddOwn').className = itemAddPendingStatus === 'own' ? 'primary' : '';
-    document.getElementById('itemAddBuy').className = itemAddPendingStatus === 'buy' ? 'primary' : '';
+    document.getElementById('itemAddOwn').classList.toggle('on', itemAddPendingStatus === 'own');
+    document.getElementById('itemAddBuy').classList.toggle('on', itemAddPendingStatus === 'buy');
   }
   document.getElementById('itemAddOwn').addEventListener('click', function(){ setItemAddStatus('own'); });
   document.getElementById('itemAddBuy').addEventListener('click', function(){ setItemAddStatus('buy'); });
@@ -2384,6 +2371,7 @@
   var currentPhotoId = null;
 
   function openDetail(photoId){
+    lastOpenedFromTab = currentTab;
     currentPhotoId = photoId;
     var p = data.photos.find(function(x){ return x.id === photoId; });
     stageImg.src = p.dataUrl;
@@ -2410,8 +2398,8 @@
   document.getElementById('overlayNext').addEventListener('click', function(){ openPhotoByIndex(activePhotoIndex + 1); });
 
   // Google Lens: one tap when the photo is stored online (signed in); otherwise open Lens to upload manually.
-  document.getElementById('lensBtn').addEventListener('click', function(){
-    var p = data.photos.find(function(x){ return x.id === currentPhotoId; });
+  function searchWithLens(photoId){
+    var p = data.photos.find(function(x){ return x.id === photoId; });
     if (!p) return;
     if (/^https?:\/\//i.test(p.dataUrl)){
       window.open('https://lens.google.com/uploadbyurl?url=' + encodeURIComponent(p.dataUrl), '_blank', 'noopener');
@@ -2419,6 +2407,10 @@
       alert('Your photos are private, so Lens can\'t fetch them by itself. Lens will open now: tap the image icon there and choose this photo from your gallery.');
       window.open('https://lens.google.com/', '_blank', 'noopener');
     }
+  }
+  document.getElementById('lensBtn').addEventListener('click', function(){ searchWithLens(currentPhotoId); });
+  document.getElementById('viewerLensBtn').addEventListener('click', function(){
+    if (currentViewerPhotoId) searchWithLens(currentViewerPhotoId);
   });
 
   var scenarioEditor = document.getElementById('scenarioEditor');
@@ -2470,44 +2462,112 @@
   var viewerCount = document.getElementById('viewerCount');
   var currentViewerPhotoId = null;
 
+  var viewerPlaceholder = document.getElementById('viewerPlaceholder');
+  var currentViewerItemId = null;
+  var defaultItemIcon = String.fromCodePoint(128085); // a generic clothing-hanger-ish fallback glyph
+
+  function viewerCountText(){
+    if (navMode === 'items') return activeItemList.length > 1 ? (activeItemIndex + 1) + ' of ' + activeItemList.length : '';
+    return activePhotoList.length > 1 ? (activePhotoIndex + 1) + ' of ' + activePhotoList.length : '';
+  }
+  // Opens a single-item (kind='item') photo — reached from Board or Wardrobe > Outfits.
   function openViewer(photoId){
-    currentViewerPhotoId = photoId;
     var p = data.photos.find(function(x){ return x.id === photoId; });
     if (!p) return;
-    viewerImg.src = p.dataUrl;
-    viewerCount.textContent = activePhotoList.length > 1 ? (activePhotoIndex + 1) + ' of ' + activePhotoList.length : '';
+    openViewerCore(p.itemId, photoId);
+  }
+  // Opens an item directly — reached from Wardrobe > Items. Shows its photo if it has one,
+  // otherwise a placeholder, since every wardrobe item can be viewed/edited here either way.
+  function openViewerForItem(itemId){
+    var thumb = itemThumb(itemId);
+    openViewerCore(itemId, thumb ? thumb.id : null);
+  }
+  function openViewerCore(itemId, photoId){
+    lastOpenedFromTab = currentTab;
+    currentViewerItemId = itemId;
+    currentViewerPhotoId = photoId;
+    if (photoId){
+      var p = data.photos.find(function(x){ return x.id === photoId; });
+      viewerImg.style.display = '';
+      viewerImg.src = p.dataUrl;
+      viewerPlaceholder.style.display = 'none';
+    } else {
+      viewerImg.style.display = 'none';
+      var it = data.items.find(function(i){ return i.id === itemId; });
+      var cat = it && it.category && CATEGORIES.find(function(c){ return c.key === it.category; });
+      viewerPlaceholder.textContent = cat ? cat.icon : defaultItemIcon;
+      viewerPlaceholder.style.display = 'flex';
+    }
+    document.getElementById('viewerLensBtn').style.display = photoId ? '' : 'none';
+    viewerCount.textContent = viewerCountText();
     overlay.classList.remove('show');
     viewerOverlay.classList.add('show');
     renderViewerCaption();
   }
   function renderViewerCaption(){
-    var p = data.photos.find(function(x){ return x.id === currentViewerPhotoId; });
-    var it = p ? data.items.find(function(i){ return i.id === p.itemId; }) : null;
+    var it = data.items.find(function(i){ return i.id === currentViewerItemId; });
     if (!it){ viewerCaption.innerHTML = ''; return; }
     viewerCaption.innerHTML =
       '<div class="v-name">'+escapeHtml(it.name)+'</div>' +
+      '<div class="season-row" id="viewerCategory" style="margin-bottom:8px;"></div>' +
+      '<div class="season-row" id="viewerSeasons" style="margin-bottom:10px;"></div>' +
       '<div class="status-toggle">' +
         '<button class="own '+(it.status==='own'?'on':'')+'" id="viewerOwn">Own</button>' +
         '<button class="buy '+(it.status==='buy'?'on':'')+'" id="viewerBuy">To buy</button>' +
-      '</div>';
+      '</div>' +
+      (it.status === 'buy' ? '<div class="buy-link" id="viewerBuyLink" style="justify-content:center;margin-top:10px;"></div>' : '') +
+      (itemPhotoCount(it.id) > 0 ? '<div style="margin-top:14px;"><button type="button" class="view-pill" id="viewerSeeLooks">See '+itemPhotoCount(it.id)+' look'+(itemPhotoCount(it.id)===1?'':'s')+' on the Board</button></div>' : '');
+    renderCategoryIcons(document.getElementById('viewerCategory'), function(){ return it.category; }, function(key){
+      it.category = key; saveMeta();
+    });
+    renderSeasonIcons(document.getElementById('viewerSeasons'), function(){ return it.seasons; }, function(key){
+      var idx = it.seasons.indexOf(key);
+      if (idx === -1) it.seasons.push(key); else it.seasons.splice(idx, 1);
+      saveMeta();
+    });
     document.getElementById('viewerOwn').addEventListener('click', function(){
       it.status = it.status === 'own' ? null : 'own'; saveMeta(); renderViewerCaption();
     });
     document.getElementById('viewerBuy').addEventListener('click', function(){
       it.status = it.status === 'buy' ? null : 'buy'; saveMeta(); renderViewerCaption();
     });
+    var linkEl = document.getElementById('viewerBuyLink');
+    if (linkEl) renderBuyLink(linkEl, it);
+    document.getElementById('viewerRemove').style.display = currentViewerPhotoId ? '' : 'none';
+    var seeBtn = document.getElementById('viewerSeeLooks');
+    if (seeBtn) seeBtn.addEventListener('click', function(){
+      viewerOverlay.classList.remove('show');
+      filterByItem([it.id], 'any');
+    });
   }
   document.getElementById('viewerClose').addEventListener('click', function(){
     viewerOverlay.classList.remove('show');
     afterOverlayClosed();
   });
-  document.getElementById('viewerPrev').addEventListener('click', function(){ openPhotoByIndex(activePhotoIndex - 1); });
-  document.getElementById('viewerNext').addEventListener('click', function(){ openPhotoByIndex(activePhotoIndex + 1); });
+  document.getElementById('viewerPrev').addEventListener('click', function(){
+    if (navMode === 'items') openItemByIndex(activeItemIndex - 1); else openPhotoByIndex(activePhotoIndex - 1);
+  });
+  document.getElementById('viewerNext').addEventListener('click', function(){
+    if (navMode === 'items') openItemByIndex(activeItemIndex + 1); else openPhotoByIndex(activePhotoIndex + 1);
+  });
   document.getElementById('viewerRemove').addEventListener('click', function(){
-    if (!confirm('Remove this photo?')) return;
+    if (!currentViewerPhotoId || !confirm('Remove this photo?')) return;
     var gone = data.photos.find(function(p){ return p.id === currentViewerPhotoId; });
     data.photos = data.photos.filter(function(p){ return p.id !== currentViewerPhotoId; });
     if (gone) deletePhotoRecord(gone);
+    viewerOverlay.classList.remove('show');
+    afterOverlayClosed();
+  });
+  document.getElementById('viewerDeleteItem').addEventListener('click', function(){
+    if (!confirm('Delete this item, its photo and its tags from every outfit?')) return;
+    var id = currentViewerItemId;
+    data.items = data.items.filter(function(i){ return i.id !== id; });
+    data.photos.filter(function(p){ return p.kind === 'item' && p.itemId === id; }).forEach(deletePhotoRecord);
+    data.photos = data.photos.filter(function(p){ return !(p.kind === 'item' && p.itemId === id); });
+    data.photos.forEach(function(p){ p.tags = p.tags.filter(function(t){ return t.itemId !== id; }); });
+    selectedItemIds = selectedItemIds.filter(function(x){ return x !== id; });
+    saveMeta();
+    persistAllPhotos();
     viewerOverlay.classList.remove('show');
     afterOverlayClosed();
   });
