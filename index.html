@@ -708,16 +708,40 @@
   }
   .corner-pick.on { background: var(--buy); border-color: var(--buy); color: #211F1C; }
   .card .badge { max-width: calc(100% - 52px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Board landing */
+  .board-landing { text-align: center; padding: 28px 0 40px; }
+  .board-landing .add-card { width: 190px; margin: 0 auto 18px; cursor: pointer; }
+  .board-landing p { color: var(--ink-soft); font-size: 13px; margin: 0 0 8px; }
+
+  /* Opening a photo: arrows at the sides, swipe to flick, and the page behind stays put */
+  html.overlay-open, body.overlay-open { overflow: hidden; overscroll-behavior: none; }
+  #overlay .stage-wrap, #viewerOverlay .stage-wrap { overflow: hidden; min-height: 0; overscroll-behavior: contain; }
+  #overlay .stage, #overlay .stage img { max-height: calc(100vh - 280px); max-height: calc(100dvh - 280px); }
+  #viewerOverlay .viewer-stage img { max-height: calc(100vh - 350px); max-height: calc(100dvh - 350px); }
+  .nav-arrow {
+    position: absolute; top: 45%; transform: translateY(-50%); z-index: 4;
+    width: 38px; height: 38px; padding: 0; border-radius: 50%;
+    border: 1px solid rgba(245,242,236,0.28); background: rgba(23,22,19,0.5); color: #F5F2EC;
+    display: none; align-items: center; justify-content: center; cursor: pointer;
+    -webkit-tap-highlight-color: transparent; backdrop-filter: blur(4px);
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .nav-arrow.left { left: 8px; }
+  .nav-arrow.right { right: 8px; }
+  .nav-arrow:active { background: var(--buy); border-color: var(--buy); color: #211F1C; }
+  .overlay.flickable .nav-arrow { display: flex; }
+  @keyframes slideInFromRight { from { transform: translateX(36px); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes slideInFromLeft { from { transform: translateX(-36px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .slide-in-right { animation: slideInFromRight .22s ease-out; }
+  .slide-in-left { animation: slideInFromLeft .22s ease-out; }
+  @media (prefers-reduced-motion: reduce) { .slide-in-right, .slide-in-left { animation: none; } }
   .viewer-stage img { max-width: 100%; max-height: 78vh; display: inline-block; border-radius: 2px; }
   .viewer-caption {
     padding: 14px 20px 0; max-width: 420px; margin: 0 auto; text-align: center;
   }
   .viewer-caption .v-name { font-family: var(--font-display); font-size: 18px; color: #F5F2EC; margin-bottom: 10px; }
   .viewer-caption .status-toggle { margin: 0 auto; }
-  .overlay-head .head-actions button#overlayPrev,
-  .overlay-head .head-actions button#overlayNext,
-  .overlay-head .head-actions button#viewerPrev,
-  .overlay-head .head-actions button#viewerNext { font-size: 18px; padding: 6px 12px; }
 
   .board-filters { margin-bottom: 4px; }
 
@@ -887,12 +911,12 @@
   <div class="overlay-head">
     <span class="hint">Tap a piece to pin it</span>
     <div class="head-actions">
-      <button id="overlayPrev" title="Previous">‹</button>
-      <button id="overlayNext" title="Next">›</button>
       <button id="lensBtn">Search with Lens</button>
       <button id="closeOverlay">Done</button>
     </div>
   </div>
+  <button type="button" class="nav-arrow left" id="overlayPrev" aria-label="Previous"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <button type="button" class="nav-arrow right" id="overlayNext" aria-label="Next"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   <div class="stage-wrap">
     <div class="stage" id="stage">
       <img id="stageImg" src="">
@@ -907,12 +931,12 @@
   <div class="overlay-head">
     <span class="hint" id="viewerCount"></span>
     <div class="head-actions">
-      <button id="viewerPrev" title="Previous">‹</button>
-      <button id="viewerNext" title="Next">›</button>
       <button id="viewerLensBtn">Search with Lens</button>
       <button id="viewerClose">Done</button>
     </div>
   </div>
+  <button type="button" class="nav-arrow left" id="viewerPrev" aria-label="Previous"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <button type="button" class="nav-arrow right" id="viewerNext" aria-label="Next"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   <div class="stage-wrap">
     <div class="viewer-stage"><img id="viewerImg" src="" alt=""><div class="viewer-placeholder" id="viewerPlaceholder" style="display:none;"></div></div>
   </div>
@@ -1469,6 +1493,59 @@
     return data.photos.find(function(p){ return p.kind === 'item' && p.itemId === itemId; });
   }
 
+  // Items that only exist as pins on outfit photos get a thumbnail cut from the outfit around the pin.
+  var cropCache = {};
+  function itemPinSource(itemId){
+    for (var i = 0; i < data.photos.length; i++){ // newest first
+      var p = data.photos[i];
+      if (p.kind === 'item' || !p.dataUrl) continue;
+      var t = p.tags.find(function(t){ return t.itemId === itemId; });
+      if (t) return { photo: p, tag: t };
+    }
+    return null;
+  }
+  function cropKey(src){ return src.photo.id + ':' + src.tag.id + ':' + src.tag.x + ':' + src.tag.y; }
+  function cachedItemCrop(itemId){
+    var src = itemPinSource(itemId);
+    return src && cropCache[cropKey(src)] ? cropCache[cropKey(src)] : null;
+  }
+  function makeItemCrop(src, cb){
+    var key = cropKey(src);
+    if (key in cropCache){ cb(cropCache[key]); return; }
+    var img = new Image();
+    img.onload = function(){
+      var url = '';
+      try {
+        var iw = img.naturalWidth, ih = img.naturalHeight;
+        var cw = iw * 0.42, ch = cw * 4 / 3;                 // 3:4 window, same shape as the grid cards
+        if (ch > ih){ ch = ih; cw = ch * 0.75; }
+        var cx = src.tag.x / 100 * iw, cy = src.tag.y / 100 * ih;
+        var left = Math.max(0, Math.min(iw - cw, cx - cw / 2));
+        var top = Math.max(0, Math.min(ih - ch, cy - ch / 2));
+        var canvas = document.createElement('canvas');
+        canvas.width = 450; canvas.height = 600;
+        canvas.getContext('2d').drawImage(img, left, top, cw, ch, 0, 0, 450, 600);
+        url = canvas.toDataURL('image/jpeg', 0.82);
+      } catch(e){ url = ''; }
+      cropCache[key] = url;
+      cb(url);
+    };
+    img.onerror = function(){ cropCache[key] = ''; cb(''); };
+    img.src = src.photo.dataUrl;
+  }
+  function fillItemCrops(container){
+    container.querySelectorAll('.item-tile-placeholder[data-crop-item]').forEach(function(tile){
+      var src = itemPinSource(tile.getAttribute('data-crop-item'));
+      if (!src) return;
+      makeItemCrop(src, function(url){
+        if (!url || !tile.isConnected) return;
+        var im = document.createElement('img');
+        im.src = url; im.alt = '';
+        tile.replaceWith(im);
+      });
+    });
+  }
+
   function findOrCreateScenario(rawName){
     var name = rawName.trim();
     if (!name) return null;
@@ -1543,7 +1620,11 @@
     else if (which === 'scenarios') renderScenarios();
     else renderInspo();
   }
-  tabBoard.addEventListener('click', function(){ showTab('board'); });
+  tabBoard.addEventListener('click', function(){
+    activeFilter = null;
+    resetBoardRefinements();
+    showTab('board');
+  });
   tabWardrobe.addEventListener('click', function(){ showTab('wardrobe'); });
   tabScenarios.addEventListener('click', function(){ showTab('scenarios'); });
   tabInspo.addEventListener('click', function(){ showTab('inspo'); });
@@ -1554,12 +1635,14 @@
   var filterName = document.getElementById('filterName');
   document.getElementById('clearFilter').addEventListener('click', function(){
     activeFilter = null;
+    resetBoardRefinements();
     filterBar.classList.remove('show');
     renderBoard();
   });
 
   function filterByItem(itemIds, mode){
     activeFilter = { type: 'item', ids: itemIds, mode: mode || 'any' };
+    resetBoardRefinements();
     var names = itemIds.map(function(id){
       var it = data.items.find(function(i){ return i.id === id; });
       return it ? it.name : '';
@@ -1570,6 +1653,7 @@
   }
   function filterByScenario(scenarioId){
     activeFilter = { type: 'scenario', ids: [scenarioId] };
+    resetBoardRefinements();
     var sc = data.scenarios.find(function(s){ return s.id === scenarioId; });
     filterName.textContent = sc ? sc.name : '';
     filterBar.classList.add('show');
@@ -1577,6 +1661,7 @@
   }
   function filterByVisibleItems(ids, label){
     activeFilter = { type: 'item', ids: ids.slice(), mode: 'any' };
+    resetBoardRefinements();
     filterName.textContent = label;
     showTab('board');
   }
@@ -1617,6 +1702,8 @@
   // actual photos; 'items' mode (Wardrobe > Items) walks wardrobe items, which may or may not
   // each have a photo of their own.
   var navMode = 'photos';
+  var flickable = false;   // true only when a photo was opened from a list that can be flicked through
+  var flickDir = 0;        // +1 / -1 while moving to the next / previous, for the slide animation
   var activePhotoList = [];
   var activePhotoIndex = -1;
   var activeItemList = [];
@@ -1624,6 +1711,7 @@
   function openPhotoByIndex(idx){
     if (!activePhotoList.length) return;
     navMode = 'photos';
+    flickable = true;
     idx = ((idx % activePhotoList.length) + activePhotoList.length) % activePhotoList.length;
     activePhotoIndex = idx;
     var p = data.photos.find(function(x){ return x.id === activePhotoList[idx]; });
@@ -1633,21 +1721,34 @@
   function openItemByIndex(idx){
     if (!activeItemList.length) return;
     navMode = 'items';
+    flickable = true;
     idx = ((idx % activeItemList.length) + activeItemList.length) % activeItemList.length;
     activeItemIndex = idx;
     openViewerForItem(activeItemList[idx]);
   }
 
+  // The Board starts as just "add a photo". Results only appear when sent here with a filter,
+  // e.g. "View on Board" from the Wardrobe page. Browse everything under Wardrobe > Outfits.
+  function resetBoardRefinements(){
+    boardSearchTerm = '';
+    boardSeasonFilter = [];
+    var si = document.getElementById('boardSearch');
+    if (si) si.value = '';
+  }
   function renderBoard(){
-    var outfitPhotos = data.photos.filter(function(p){ return p.kind !== 'item'; });
-    if (outfitPhotos.length === 0 && !activeFilter){
+    if (!activeFilter){
+      activePhotoList = [];
       boardView.innerHTML =
-        '<div class="empty"><div class="big">No looks yet</div>' +
-        'Add a photo, crop it if you like, then choose Full outfit and tap each piece to pin it — "Navy loafer", "Grey wool coat" — ' +
-        'and mark whether you own it or want to buy it.<br><br>' +
-        '<button class="add-card" style="display:inline-flex;width:160px;margin-top:8px;" id="emptyAdd">' +
-        '<span class="plus">+</span>Add a photo</button></div>';
-      document.getElementById('emptyAdd').addEventListener('click', openFilePicker);
+        '<div class="board-landing">' +
+          '<div class="add-card" id="landingAdd"><span class="plus">+</span>Add a photo</div>' +
+          '<p>Crop it, then choose Single item or Full outfit.</p>' +
+          '<button type="button" class="plain-btn" id="landingBrowse">Browse your outfits</button>' +
+        '</div>';
+      document.getElementById('landingAdd').addEventListener('click', openFilePicker);
+      document.getElementById('landingBrowse').addEventListener('click', function(){
+        wardrobeMode = 'outfits';
+        showTab('wardrobe');
+      });
       return;
     }
     if (!document.getElementById('boardSearch')){
@@ -1720,13 +1821,10 @@
         (scenarioNames.length ? '<div class="scenarios">'+scenarioNames.map(function(n){ return '<span>'+escapeHtml(n)+'</span>'; }).join('')+'</div>' : '') +
         '</div>';
     });
-    if (!activeFilter && !term && !boardSeasonFilter.length) html += '<div class="add-card" id="boardAdd"><span class="plus">+</span>Add a photo</div>';
     html += '</div>';
     body.innerHTML = html;
     wireColsToggle(body);
     wireBoardSeasonFilter(body);
-    var addBtn = document.getElementById('boardAdd');
-    if (addBtn) addBtn.addEventListener('click', openFilePicker);
     body.querySelectorAll('.card').forEach(function(el){
       el.addEventListener('click', function(){
         openPhotoByIndex(activePhotoList.indexOf(el.getAttribute('data-id')));
@@ -1833,6 +1931,7 @@
     var viewBtn = document.getElementById('viewOutfitSeasonOnBoard');
     if (viewBtn) viewBtn.addEventListener('click', function(){
       activeFilter = { type: 'season', ids: wardrobeOutfitSeasonFilter.slice() };
+      resetBoardRefinements();
       filterName.textContent = wardrobeOutfitSeasonFilter.map(seasonLabel).join(' or ');
       showTab('board');
     });
@@ -1904,7 +2003,9 @@
           '<div class="corner-pick '+(picked?'on':'')+'" data-id="'+it.id+'">'+(picked?'✓':'')+'</div>' +
           (thumb
             ? '<img src="'+thumb.dataUrl+'" alt="">'
-            : '<div class="item-tile-placeholder">'+(cat ? cat.icon : defaultItemIcon)+'</div>') +
+            : (cachedItemCrop(it.id)
+                ? '<img src="'+cachedItemCrop(it.id)+'" alt="">'
+                : '<div class="item-tile-placeholder"'+(itemPinSource(it.id) ? ' data-crop-item="'+it.id+'"' : '')+'>'+(cat ? cat.icon : defaultItemIcon)+'</div>')) +
           '<span class="badge">'+escapeHtml(it.name)+'</span>' +
           (it.status ? '<div class="scenarios"><span>'+(it.status==='own'?'Own':'To buy')+'</span></div>' : '') +
           '</div>';
@@ -1920,6 +2021,7 @@
       '<button class="view" id="viewSelected">View looks</button>' +
     '</div>';
     body.innerHTML = html;
+    fillItemCrops(body);
 
     // Filters
     body.querySelectorAll('.chip-row .chip-btn').forEach(function(b){
@@ -2287,6 +2389,7 @@
   }
   document.getElementById('kindOutfitBtn').addEventListener('click', function(){
     kindOverlay.classList.remove('show');
+    flickable = false;
     openDetail(pendingKindPhotoId); // kind already defaults to 'outfit'
   });
   document.getElementById('kindItemBtn').addEventListener('click', function(){
@@ -2375,7 +2478,11 @@
     currentPhotoId = photoId;
     var p = data.photos.find(function(x){ return x.id === photoId; });
     stageImg.src = p.dataUrl;
+    viewerOverlay.classList.remove('show');
+    closePopover();
     overlay.classList.add('show');
+    updateFlickUi();
+    animateFlick(stage);
     renderPins();
     renderPhotoSeasons();
     renderScenarioEditor();
@@ -2394,23 +2501,38 @@
     closePopover();
     afterOverlayClosed();
   });
-  document.getElementById('overlayPrev').addEventListener('click', function(){ openPhotoByIndex(activePhotoIndex - 1); });
-  document.getElementById('overlayNext').addEventListener('click', function(){ openPhotoByIndex(activePhotoIndex + 1); });
 
-  // Google Lens: one tap when the photo is stored online (signed in); otherwise open Lens to upload manually.
-  function searchWithLens(photoId){
-    var p = data.photos.find(function(x){ return x.id === photoId; });
-    if (!p) return;
-    if (/^https?:\/\//i.test(p.dataUrl)){
-      window.open('https://lens.google.com/uploadbyurl?url=' + encodeURIComponent(p.dataUrl), '_blank', 'noopener');
-    } else {
-      alert('Your photos are private, so Lens can\'t fetch them by itself. Lens will open now: tap the image icon there and choose this photo from your gallery.');
-      window.open('https://lens.google.com/', '_blank', 'noopener');
-    }
+  // Google Lens can't read private Drive photos by link, so hand the picture itself to the phone's
+  // share sheet (Lens is one of the choices there). Where sharing isn't available, save it and open Lens.
+  function downloadDataUrl(u, name){
+    var a = document.createElement('a');
+    a.href = u; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
   }
-  document.getElementById('lensBtn').addEventListener('click', function(){ searchWithLens(currentPhotoId); });
+  function searchWithLens(src){
+    if (!src) return;
+    if (/^https?:\/\//i.test(src)){
+      window.open('https://lens.google.com/uploadbyurl?url=' + encodeURIComponent(src), '_blank', 'noopener');
+      return;
+    }
+    try {
+      var blob = dataUrlToBlob(src);
+      var file = new File([blob], 'wardrobe-photo.jpg', { type: blob.type || 'image/jpeg' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })){
+        navigator.share({ files: [file], title: 'Search with Lens' }).catch(function(){ /* closed without choosing */ });
+        return;
+      }
+    } catch(e){ /* fall through to the download route */ }
+    downloadDataUrl(src, 'wardrobe-photo.jpg');
+    alert('This device can\'t send photos straight to Lens, so the photo was saved to your downloads. Lens will open now: add that photo there.');
+    window.open('https://lens.google.com/', '_blank', 'noopener');
+  }
+  document.getElementById('lensBtn').addEventListener('click', function(){
+    var p = data.photos.find(function(x){ return x.id === currentPhotoId; });
+    if (p) searchWithLens(p.dataUrl);
+  });
   document.getElementById('viewerLensBtn').addEventListener('click', function(){
-    if (currentViewerPhotoId) searchWithLens(currentViewerPhotoId);
+    if (viewerImg.style.display !== 'none' && viewerImg.src) searchWithLens(viewerImg.src);
   });
 
   var scenarioEditor = document.getElementById('scenarioEditor');
@@ -2497,11 +2619,23 @@
       var cat = it && it.category && CATEGORIES.find(function(c){ return c.key === it.category; });
       viewerPlaceholder.textContent = cat ? cat.icon : defaultItemIcon;
       viewerPlaceholder.style.display = 'flex';
+      var pinSrc = itemPinSource(itemId);
+      if (pinSrc) makeItemCrop(pinSrc, function(url){
+        if (url && currentViewerItemId === itemId && !currentViewerPhotoId){
+          viewerImg.src = url;
+          viewerImg.style.display = '';
+          viewerPlaceholder.style.display = 'none';
+          document.getElementById('viewerLensBtn').style.display = '';
+        }
+      });
     }
-    document.getElementById('viewerLensBtn').style.display = photoId ? '' : 'none';
+    // Lens is offered whenever a picture is showing: the item's own photo, or the cut-out from an outfit
+    document.getElementById('viewerLensBtn').style.display = viewerImg.style.display !== 'none' ? '' : 'none';
     viewerCount.textContent = viewerCountText();
     overlay.classList.remove('show');
     viewerOverlay.classList.add('show');
+    updateFlickUi();
+    animateFlick(viewerImg.parentNode);
     renderViewerCaption();
   }
   function renderViewerCaption(){
@@ -2544,12 +2678,6 @@
     viewerOverlay.classList.remove('show');
     afterOverlayClosed();
   });
-  document.getElementById('viewerPrev').addEventListener('click', function(){
-    if (navMode === 'items') openItemByIndex(activeItemIndex - 1); else openPhotoByIndex(activePhotoIndex - 1);
-  });
-  document.getElementById('viewerNext').addEventListener('click', function(){
-    if (navMode === 'items') openItemByIndex(activeItemIndex + 1); else openPhotoByIndex(activePhotoIndex + 1);
-  });
   document.getElementById('viewerRemove').addEventListener('click', function(){
     if (!currentViewerPhotoId || !confirm('Remove this photo?')) return;
     var gone = data.photos.find(function(p){ return p.id === currentViewerPhotoId; });
@@ -2571,6 +2699,68 @@
     viewerOverlay.classList.remove('show');
     afterOverlayClosed();
   });
+
+  // ---------- Flicking: arrows, swipe, keyboard; and keep the page behind still ----------
+  function flickCount(){ return navMode === 'items' ? activeItemList.length : activePhotoList.length; }
+  function updateFlickUi(){
+    var on = flickable && flickCount() > 1;
+    overlay.classList.toggle('flickable', on);
+    viewerOverlay.classList.toggle('flickable', on);
+  }
+  function animateFlick(el){
+    if (!flickDir || !el){ flickDir = 0; return; }
+    el.classList.remove('slide-in-left', 'slide-in-right');
+    void el.offsetWidth;
+    el.classList.add(flickDir > 0 ? 'slide-in-right' : 'slide-in-left');
+    flickDir = 0;
+  }
+  function flickBy(delta){
+    if (!flickable || flickCount() < 2) return;
+    flickDir = delta;
+    if (navMode === 'items') openItemByIndex(activeItemIndex + delta); else openPhotoByIndex(activePhotoIndex + delta);
+  }
+  ['overlayPrev', 'viewerPrev'].forEach(function(id){ document.getElementById(id).addEventListener('click', function(){ flickBy(-1); }); });
+  ['overlayNext', 'viewerNext'].forEach(function(id){ document.getElementById(id).addEventListener('click', function(){ flickBy(1); }); });
+
+  function attachSwipe(el){
+    var sx = 0, sy = 0, tracking = false;
+    el.addEventListener('touchstart', function(e){
+      var t = e.target;
+      tracking = e.touches.length === 1 && !!t.closest && !!t.closest('.stage-wrap, .nav-arrow') && !t.closest('.popover');
+      if (tracking){ sx = e.touches[0].clientX; sy = e.touches[0].clientY; }
+    }, { passive: true });
+    el.addEventListener('touchmove', function(e){
+      if (!tracking) return;
+      var t = e.touches[0];
+      // once a finger really moves, stop the browser scrolling the page / pulling to refresh
+      if (Math.abs(t.clientX - sx) > 8 || Math.abs(t.clientY - sy) > 8) e.preventDefault();
+    }, { passive: false });
+    el.addEventListener('touchend', function(e){
+      if (!tracking) return;
+      tracking = false;
+      var t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+      if (Math.abs(dx) >= 50 && Math.abs(dx) > Math.abs(dy) * 1.3) flickBy(dx < 0 ? 1 : -1);
+    }, { passive: true });
+    el.addEventListener('touchcancel', function(){ tracking = false; }, { passive: true });
+  }
+  attachSwipe(overlay);
+  attachSwipe(viewerOverlay);
+
+  document.addEventListener('keydown', function(e){
+    if (!flickable || (!overlay.classList.contains('show') && !viewerOverlay.classList.contains('show'))) return;
+    var tag = (e.target && e.target.tagName) || '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if (e.key === 'ArrowRight') flickBy(1); else if (e.key === 'ArrowLeft') flickBy(-1);
+  });
+
+  // While any full-screen panel is open, the page underneath can't scroll.
+  function syncOverlayLock(){
+    var open = !!document.querySelector('.overlay.show');
+    document.documentElement.classList.toggle('overlay-open', open);
+    document.body.classList.toggle('overlay-open', open);
+  }
+  var lockObserver = new MutationObserver(syncOverlayLock);
+  document.querySelectorAll('.overlay').forEach(function(el){ lockObserver.observe(el, { attributes: true, attributeFilter: ['class'] }); });
 
   function renderPins(){
     stage.querySelectorAll('.pin, .taglabel').forEach(function(el){ el.remove(); });
