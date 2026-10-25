@@ -718,7 +718,11 @@
   html.overlay-open, body.overlay-open { overflow: hidden; overscroll-behavior: none; }
   #overlay .stage-wrap, #viewerOverlay .stage-wrap { overflow: hidden; min-height: 0; overscroll-behavior: contain; }
   #overlay .stage, #overlay .stage img { max-height: calc(100vh - 280px); max-height: calc(100dvh - 280px); }
-  #viewerOverlay .viewer-stage img { max-height: calc(100vh - 350px); max-height: calc(100dvh - 350px); }
+  #viewerOverlay .viewer-stage img { max-height: calc(100vh - 400px); max-height: calc(100dvh - 400px); }
+  /* each row of icons (type, season) sits on its own line */
+  .viewer-caption .season-row { display: flex; justify-content: center; }
+  .popover .season-row { display: flex; }
+  .item-add-card .season-row { display: flex; justify-content: center; }
   .nav-arrow {
     position: absolute; top: 45%; transform: translateY(-50%); z-index: 4;
     width: 38px; height: 38px; padding: 0; border-radius: 50%;
@@ -852,7 +856,7 @@
     <nav class="tabs">
       <button id="tabBoard" class="active">Board</button>
       <button id="tabWardrobe">Wardrobe</button>
-      <button id="tabScenarios">Scenarios</button>
+      <button id="tabScenarios">Tags</button>
       <button id="tabInspo">Inspo</button>
     </nav>
   </header>
@@ -941,7 +945,7 @@
     <div class="viewer-stage"><img id="viewerImg" src="" alt=""><div class="viewer-placeholder" id="viewerPlaceholder" style="display:none;"></div></div>
   </div>
   <div class="viewer-caption" id="viewerCaption"></div>
-  <footer class="remove-photo"><button id="viewerRemove">Remove this photo</button><button id="viewerDeleteItem" style="margin-left:14px;">Delete this item</button></footer>
+  <footer class="remove-photo"><button id="viewerDeleteItem">Delete this item</button></footer>
 </div>
 
 <script>
@@ -1596,9 +1600,9 @@
   var subline = document.getElementById('subline');
 
   var sublines = {
-    board: 'Tag every item, then pull up every look it\'s in.',
+    board: 'Pin every piece, then pull up every look it\'s in.',
     wardrobe: 'Search, filter, and mark what you own or still want.',
-    scenarios: 'Link looks to where you\'d wear them — gym, work, date night.',
+    scenarios: 'Tag photos by occasion — gym, work, date night.',
     inspo: 'People whose style you love — one tap to their page.'
   };
 
@@ -1805,20 +1809,21 @@
 
     html += '<div class="board">';
     shown.forEach(function(p){
-      if (p.kind === 'item'){
-        var it = data.items.find(function(i){ return i.id === p.itemId; });
-        html += '<div class="card" data-id="'+p.id+'"><img src="'+p.dataUrl+'" alt="">' +
-          '<span class="badge">'+(it ? escapeHtml(it.name) : 'Item')+'</span></div>';
-        return;
-      }
       var scenarioNames = p.scenarioIds.map(function(id){
         var s = data.scenarios.find(function(x){ return x.id === id; });
         return s ? s.name : null;
       }).filter(Boolean);
+      var tagPills = scenarioNames.length ? '<div class="scenarios">'+scenarioNames.map(function(n){ return '<span>'+escapeHtml(n)+'</span>'; }).join('')+'</div>' : '';
+      if (p.kind === 'item'){
+        var it = data.items.find(function(i){ return i.id === p.itemId; });
+        html += '<div class="card" data-id="'+p.id+'"><img src="'+p.dataUrl+'" alt="">' +
+          '<span class="badge">'+(it ? escapeHtml(it.name) : 'Item')+'</span>' + tagPills + '</div>';
+        return;
+      }
       html += '<div class="card" data-id="'+p.id+'">' +
         '<img src="'+p.dataUrl+'" alt="">' +
-        (p.tags.length ? '<span class="badge">'+p.tags.length+' tagged</span>' : '') +
-        (scenarioNames.length ? '<div class="scenarios">'+scenarioNames.map(function(n){ return '<span>'+escapeHtml(n)+'</span>'; }).join('')+'</div>' : '') +
+        (p.tags.length ? '<span class="badge">'+p.tags.length+' pinned</span>' : '') +
+        tagPills +
         '</div>';
     });
     html += '</div>';
@@ -1907,7 +1912,7 @@
     html += '<div class="board">';
     photos.forEach(function(p){
       html += '<div class="card" data-id="'+p.id+'"><img src="'+p.dataUrl+'" alt="">' +
-        (p.tags.length ? '<span class="badge">'+p.tags.length+' tagged</span>' : '') + '</div>';
+        (p.tags.length ? '<span class="badge">'+p.tags.length+' pinned</span>' : '') + '</div>';
     });
     html += '<div class="add-card" id="wardrobeOutfitAdd"><span class="plus">+</span>Add a photo</div></div>';
     container.innerHTML = html;
@@ -1940,8 +1945,8 @@
   // The search box lives outside #wardrobeBody so it keeps focus while you type.
   function renderWardrobeItems(container){
     if (data.items.length === 0){
-      container.innerHTML = '<div class="empty"><div class="big">Nothing tagged yet</div>' +
-        'Tag a few pieces on the Board, or add a Single item photo, and they\'ll collect here, ready to mark as owned or on the list to buy.</div>';
+      container.innerHTML = '<div class="empty"><div class="big">Nothing in your wardrobe yet</div>' +
+        'Pin a few pieces on an outfit, or add a Single item photo, and they\'ll collect here, ready to mark as owned or on the list to buy.</div>';
       return;
     }
     if (!document.getElementById('wardrobeSearch')){
@@ -2140,8 +2145,8 @@
   // ---------- Scenarios ----------
   function renderScenarios(){
     if (data.scenarios.length === 0){
-      scenariosView.innerHTML = '<div class="empty"><div class="big">No scenarios yet</div>' +
-        'Open a photo and tag it "Gym", "Work", or "Date night" — then come back here to pull up every look for that occasion.</div>';
+      scenariosView.innerHTML = '<div class="empty"><div class="big">No tags yet</div>' +
+        'Open a photo and add a tag like "Gym", "Work" or "Date night" — then come back here to pull up every photo with that tag.</div>';
       return;
     }
     var sorted = data.scenarios.slice().sort(function(a,b){ return a.name.localeCompare(b.name); });
@@ -2150,8 +2155,8 @@
       var count = scenarioPhotoCount(s.id);
       html += '<div class="witem">' +
         '<button class="name-btn" data-id="'+s.id+'" style="flex:1;">'+escapeHtml(s.name)+
-          '<span class="count">'+count+' look'+(count===1?'':'s')+'</span></button>' +
-        '<button class="del" data-id="'+s.id+'" title="Remove scenario">✕</button>' +
+          '<span class="count">'+count+' photo'+(count===1?'':'s')+'</span></button>' +
+        '<button class="del" data-id="'+s.id+'" title="Remove tag">✕</button>' +
       '</div>';
     });
     html += '</div>';
@@ -2162,7 +2167,7 @@
     scenariosView.querySelectorAll('.del').forEach(function(b){
       b.addEventListener('click', function(){
         var id = b.getAttribute('data-id');
-        if (!confirm('Remove this scenario from every photo?')) return;
+        if (!confirm('Remove this tag from every photo?')) return;
         data.scenarios = data.scenarios.filter(function(s){ return s.id !== id; });
         data.photos.forEach(function(p){ p.scenarioIds = p.scenarioIds.filter(function(sid){ return sid !== id; }); });
         saveMeta();
@@ -2535,37 +2540,41 @@
     if (viewerImg.style.display !== 'none' && viewerImg.src) searchWithLens(viewerImg.src);
   });
 
+  // Tags (shown to you as "tags"; stored as scenarios): occasion labels like Gym or Work, kept on the photo.
   var scenarioEditor = document.getElementById('scenarioEditor');
-  function renderScenarioEditor(){
-    var p = data.photos.find(function(x){ return x.id === currentPhotoId; });
+  function renderTagEditor(container, p, refocus){
     var html = '';
     p.scenarioIds.forEach(function(id){
       var s = data.scenarios.find(function(x){ return x.id === id; });
       if (!s) return;
-      html += '<span class="chip">'+escapeHtml(s.name)+'<button data-id="'+id+'">✕</button></span>';
+      html += '<span class="chip">'+escapeHtml(s.name)+'<button type="button" data-id="'+id+'" aria-label="Remove tag">\u2715</button></span>';
     });
-    html += '<input type="text" id="scenarioInput" placeholder="Add a scenario, e.g. Gym">';
-    scenarioEditor.innerHTML = html;
-    scenarioEditor.querySelectorAll('.chip button').forEach(function(b){
+    html += '<input type="text" class="tag-input" placeholder="Add a tag, e.g. Gym" autocomplete="off">';
+    container.innerHTML = html;
+    container.querySelectorAll('.chip button').forEach(function(b){
       b.addEventListener('click', function(){
         var id = b.getAttribute('data-id');
         p.scenarioIds = p.scenarioIds.filter(function(x){ return x !== id; });
         savePhoto(p);
-        renderScenarioEditor();
+        renderTagEditor(container, p);
       });
     });
-    var input = document.getElementById('scenarioInput');
+    var input = container.querySelector('.tag-input');
     input.addEventListener('keydown', function(e){
-      if (e.key === 'Enter'){
-        var name = input.value.trim();
-        if (!name) return;
-        var s = findOrCreateScenario(name);
-        if (p.scenarioIds.indexOf(s.id) === -1) p.scenarioIds.push(s.id);
-        saveMeta();
-        savePhoto(p);
-        renderScenarioEditor();
-      }
+      if (e.key !== 'Enter') return;
+      var name = input.value.trim();
+      if (!name) return;
+      var s = findOrCreateScenario(name);
+      if (p.scenarioIds.indexOf(s.id) === -1) p.scenarioIds.push(s.id);
+      saveMeta();
+      savePhoto(p);
+      renderTagEditor(container, p, true);
     });
+    if (refocus) input.focus(); // so several tags can be added in a row
+  }
+  function renderScenarioEditor(){
+    var p = data.photos.find(function(x){ return x.id === currentPhotoId; });
+    renderTagEditor(scenarioEditor, p);
   }
   document.getElementById('removePhoto').addEventListener('click', function(){
     if (!confirm('Remove this photo and its tags?')) return;
@@ -2650,6 +2659,7 @@
         '<button class="buy '+(it.status==='buy'?'on':'')+'" id="viewerBuy">To buy</button>' +
       '</div>' +
       (it.status === 'buy' ? '<div class="buy-link" id="viewerBuyLink" style="justify-content:center;margin-top:10px;"></div>' : '') +
+      (currentViewerPhotoId ? '<div class="scenario-editor" id="viewerTags" style="justify-content:center;"></div>' : '') +
       (itemPhotoCount(it.id) > 0 ? '<div style="margin-top:14px;"><button type="button" class="view-pill" id="viewerSeeLooks">See '+itemPhotoCount(it.id)+' look'+(itemPhotoCount(it.id)===1?'':'s')+' on the Board</button></div>' : '');
     renderCategoryIcons(document.getElementById('viewerCategory'), function(){ return it.category; }, function(key){
       it.category = key; saveMeta();
@@ -2667,7 +2677,9 @@
     });
     var linkEl = document.getElementById('viewerBuyLink');
     if (linkEl) renderBuyLink(linkEl, it);
-    document.getElementById('viewerRemove').style.display = currentViewerPhotoId ? '' : 'none';
+    var tagsEl = document.getElementById('viewerTags');
+    var tagPhoto = currentViewerPhotoId && data.photos.find(function(x){ return x.id === currentViewerPhotoId; });
+    if (tagsEl && tagPhoto) renderTagEditor(tagsEl, tagPhoto);
     var seeBtn = document.getElementById('viewerSeeLooks');
     if (seeBtn) seeBtn.addEventListener('click', function(){
       viewerOverlay.classList.remove('show');
@@ -2675,14 +2687,6 @@
     });
   }
   document.getElementById('viewerClose').addEventListener('click', function(){
-    viewerOverlay.classList.remove('show');
-    afterOverlayClosed();
-  });
-  document.getElementById('viewerRemove').addEventListener('click', function(){
-    if (!currentViewerPhotoId || !confirm('Remove this photo?')) return;
-    var gone = data.photos.find(function(p){ return p.id === currentViewerPhotoId; });
-    data.photos = data.photos.filter(function(p){ return p.id !== currentViewerPhotoId; });
-    if (gone) deletePhotoRecord(gone);
     viewerOverlay.classList.remove('show');
     afterOverlayClosed();
   });
