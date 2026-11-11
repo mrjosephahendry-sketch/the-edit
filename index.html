@@ -381,7 +381,7 @@
     margin-top: 12px;
     font-size: 13px;
   }
-  .selectbar.show { display: flex; }
+  .selectbar.show { display: flex; flex-wrap: wrap; row-gap: 8px; }
   .selectbar .mode-toggle { display: inline-flex; border: 1px solid rgba(255,255,255,0.3); border-radius: 999px; overflow: hidden; margin-left: auto; }
   .selectbar .mode-toggle button { border: none; background: none; color: var(--bg); font-size: 11.5px; padding: 5px 10px; cursor: pointer; opacity: 0.6; font-family: var(--font-body); }
   .selectbar .mode-toggle button.on { opacity: 1; background: rgba(255,255,255,0.16); }
@@ -849,6 +849,7 @@
         <span id="accountName"></span>
         <span id="syncStatus"></span>
         <button id="reconnectBtn" style="display:none;">Reconnect</button>
+        <button id="syncWhyBtn" style="display:none;">Why?</button>
         <button id="signInBtn" style="display:none;">Sign in with Google to sync</button>
         <button id="signOutBtn">Sign out</button>
       </div>
@@ -1093,7 +1094,7 @@
   function blobToDataUrl(b){
     return new Promise(function(resolve, reject){
       var r = new FileReader();
-      r.onload = function(){ resolve(r.result); };
+      r.onload = function(){ resolve(String(r.result).replace(/^data:(?:application\/octet-stream)?;base64,/, 'data:image/jpeg;base64,')); };
       r.onerror = function(){ reject(r.error); };
       r.readAsDataURL(b);
     });
@@ -1102,17 +1103,19 @@
   async function driveFetch(token, url, opts){
     opts = opts || {};
     opts.headers = Object.assign({ Authorization: 'Bearer ' + token }, opts.headers || {});
-    var res = await fetch(url, opts);
+    var res;
+    try { res = await fetch(url, opts); }
+    catch(netErr){ var ne = new Error('No connection'); ne.network = true; throw ne; }
     if (!res.ok){
       var err = new Error('Drive ' + res.status);
       err.status = res.status;
-      if (res.status === 403){
-        try {
-          var body = await res.clone().json();
-          var reasons = (body.error && body.error.errors || []).map(function(e){ return e.reason; });
-          if (reasons.indexOf('storageQuotaExceeded') !== -1) err.quotaFull = true;
-        } catch(e2){}
-      }
+      try {
+        var body = await (res.clone ? res.clone() : res).json();
+        var info = (body && body.error) || {};
+        err.detail = info.message || '';
+        err.reason = (info.errors && info.errors[0] && info.errors[0].reason) || info.status || '';
+        if ((info.errors || []).some(function(x){ return x.reason === 'storageQuotaExceeded'; })) err.quotaFull = true;
+      } catch(e2){}
       throw err;
     }
     return res;
@@ -1340,6 +1343,34 @@
     syncTimer = setTimeout(runSync, 1500);
   }
   var driveQuotaWarning = '';
+  var lastSyncError = null, retryTimer = null, retryCount = 0;
+
+  // Turn a failure into something you can act on. "retry" = worth trying again by itself.
+  function describeSyncError(e){
+    var status = e && e.status, reason = (e && e.reason) || '', detail = (e && e.detail) || '';
+    var hay = (reason + ' ' + detail).toLowerCase();
+    var tech = e && e.network ? 'No network connection'
+      : status ? 'Google Drive error ' + status + (reason ? ' \u00b7 ' + reason : '') + (detail ? ' \u00b7 ' + detail : '')
+      : String((e && e.message) || e);
+    if (e && e.network)
+      return { retry: true, tech: tech, help: 'No connection to Google right now. It will try again by itself when you are back online.' };
+    if (status === 403 && /accessnotconfigured|service_disabled|has not been used|is disabled/.test(hay))
+      return { retry: false, tech: tech, help: 'The Google Drive API is switched off for this app. In Google Cloud Console open the app\'s project, go to APIs & Services > Library, find "Google Drive API" and press Enable. Then tap Retry.' };
+    if (status === 403 && /insufficient|scope/.test(hay))
+      return { retry: false, tech: tech, help: 'Google Drive access wasn\'t allowed when you signed in. Sign out, sign in again, and make sure the Drive permission box is ticked.' };
+    if ((status === 403 && /ratelimit|rate limit|quota/.test(hay)) || status === 429 || (status >= 500 && status < 600))
+      return { retry: true, tech: tech, help: 'Google Drive is busy or asking us to slow down. It will try again shortly.' };
+    if (status === 403)
+      return { retry: false, tech: tech, help: 'Google refused access to Drive for this account. If the app is still in testing, check this Google account is listed as a Test user on the OAuth consent screen in Google Cloud.' };
+    return { retry: false, tech: tech, help: 'Something went wrong talking to Google Drive. Tap Retry. If it keeps happening, the detail below says why.' };
+  }
+  function scheduleRetry(){
+    if (retryCount >= 5) return;
+    var delay = (window.__syncRetryBaseMs || 3000) * Math.pow(2, retryCount);
+    retryCount++;
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(runSync, delay);
+  }
   async function runSync(){
     if (!DRIVE_ENABLED) return;
     if (syncing){ syncAgain = true; return; }
@@ -1350,12 +1381,17 @@
     try {
       await syncWithDrive(token);
       await checkStorageQuota(token);
+      lastSyncError = null; retryCount = 0; clearTimeout(retryTimer);
       setSyncStatus('ok');
     } catch(e){
       console.error(e);
       if (e && e.quotaFull) setSyncStatus('full');
       else if (e && e.status === 401){ clearToken(); setSyncStatus('paused'); }
-      else setSyncStatus('error');
+      else {
+        lastSyncError = describeSyncError(e);
+        setSyncStatus('error');
+        if (lastSyncError.retry) scheduleRetry();
+      }
     }
     syncing = false;
     if (syncAgain){ syncAgain = false; runSync(); }
@@ -2024,6 +2060,7 @@
         '<button data-mode="all" class="'+(selectMode==='all'?'on':'')+'">All</button>' +
       '</div>' +
       '<button class="view" id="viewSelected">View looks</button>' +
+      '<button class="view" id="createOutfitBtn">Create outfit</button>' +
     '</div>';
     body.innerHTML = html;
     fillItemCrops(body);
@@ -2103,11 +2140,128 @@
       bar.querySelectorAll('.mode-toggle button').forEach(function(b){
         b.addEventListener('click', function(){ selectMode = b.getAttribute('data-mode'); renderWardrobeBody(); });
       });
+      document.getElementById('createOutfitBtn').addEventListener('click', function(){ createOutfitFromItems(selectedItemIds.slice()); });
       document.getElementById('viewSelected').addEventListener('click', function(){
         if (!anyHasLooks(selectedItemIds)){ warnNoLooks(); return; }
         filterByItem(selectedItemIds.slice(), selectMode);
       });
     }
+  }
+
+  // ---------- Create an outfit from the ticked items ----------
+  // Lays the pieces out top to bottom in one picture (outerwear, tops, dresses, trousers, shoes, with
+  // accessories in a side column), saves it as a normal outfit, and pins each piece where it was placed.
+  var OUTFIT_W = 900, OUTFIT_H = 1200;
+  var SLOT_ORDER = { outerwear: 0, tops: 1, dresses: 2, bottoms: 3, shoes: 4 };
+  var SLOT_WEIGHT = { outerwear: 1.3, tops: 1.1, dresses: 2.2, bottoms: 1.6, shoes: 0.75 };
+
+  function layoutOutfit(items){
+    var inSlot = function(it){ return it.category in SLOT_ORDER; };
+    var main = items.filter(inSlot), side = items.filter(function(it){ return !inSlot(it); });
+    if (!main.length){ main = items.slice(); side = []; }   // nothing with a body position: just stack them
+    main.sort(function(a, b){ return (SLOT_ORDER[a.category] == null ? 9 : SLOT_ORDER[a.category]) - (SLOT_ORDER[b.category] == null ? 9 : SLOT_ORDER[b.category]); });
+    var pad = 48, gap = 20, sideW = side.length ? 230 : 0;
+    var mainW = OUTFIT_W - pad * 2 - (side.length ? sideW + gap : 0);
+    if (!side.length) mainW = Math.min(mainW, 640);
+    var mainX = side.length ? pad : Math.round((OUTFIT_W - mainW) / 2);
+    var weight = function(it){ return SLOT_WEIGHT[it.category] || 1; };
+    var tiles = [];
+    var avail = OUTFIT_H - pad * 2 - gap * (main.length - 1);
+    var total = main.reduce(function(s, it){ return s + weight(it); }, 0);
+    var y = pad;
+    main.forEach(function(it){
+      var h = Math.round(avail * weight(it) / total);
+      tiles.push({ item: it, x: mainX, y: y, w: mainW, h: h });
+      y += h + gap;
+    });
+    if (side.length){
+      var sh = Math.min(sideW, Math.floor((OUTFIT_H - pad * 2 - gap * (side.length - 1)) / side.length));
+      side.forEach(function(it, i){ tiles.push({ item: it, x: OUTFIT_W - pad - sideW, y: pad + i * (sh + gap), w: sideW, h: sh }); });
+    }
+    return tiles;
+  }
+  // The picture to use for an item: its own photo, else a cut-out of an outfit it's pinned on, else none.
+  function itemPictureFor(itemId){
+    return new Promise(function(resolve){
+      var t = itemThumb(itemId);
+      if (t) return resolve({ url: t.dataUrl, mode: 'contain' });
+      var src = itemPinSource(itemId);
+      if (!src) return resolve(null);
+      makeItemCrop(src, function(url){ resolve(url ? { url: url, mode: 'cover' } : null); });
+    });
+  }
+  function loadImage(url){
+    return new Promise(function(resolve){
+      var im = new Image();
+      im.onload = function(){ resolve(im); };
+      im.onerror = function(){ resolve(null); };
+      im.src = url;
+    });
+  }
+  function roundRectPath(ctx, x, y, w, h, r){
+    ctx.beginPath(); ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+  async function renderOutfitImage(items){
+    var tiles = layoutOutfit(items);
+    var pics = await Promise.all(tiles.map(function(t){
+      return itemPictureFor(t.item.id).then(function(p){
+        return p ? loadImage(p.url).then(function(im){ return im ? { im: im, mode: p.mode } : null; }) : null;
+      });
+    }));
+    var canvas = document.createElement('canvas');
+    canvas.width = OUTFIT_W; canvas.height = OUTFIT_H;
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#EFEAE0'; ctx.fillRect(0, 0, OUTFIT_W, OUTFIT_H);
+    tiles.forEach(function(t, i){
+      ctx.save();
+      roundRectPath(ctx, t.x, t.y, t.w, t.h, 22);
+      ctx.fillStyle = '#FFFFFF'; ctx.fill(); ctx.clip();
+      var pic = pics[i];
+      if (pic){
+        var iw = pic.im.naturalWidth || pic.im.width, ih = pic.im.naturalHeight || pic.im.height;
+        var scale = pic.mode === 'cover' ? Math.max(t.w / iw, t.h / ih) : Math.min((t.w - 36) / iw, (t.h - 36) / ih);
+        var dw = iw * scale, dh = ih * scale;
+        ctx.drawImage(pic.im, t.x + (t.w - dw) / 2, t.y + (t.h - dh) / 2, dw, dh);
+      } else {
+        var cat = CATEGORIES.find(function(c){ return c.key === t.item.category; });
+        ctx.fillStyle = '#211F1C'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = Math.round(Math.min(t.w, t.h) * 0.34) + 'px sans-serif';
+        ctx.fillText(cat ? cat.icon : defaultItemIcon, t.x + t.w / 2, t.y + t.h / 2 - 18);
+        ctx.font = '600 28px sans-serif';
+        ctx.fillText(t.item.name, t.x + t.w / 2, t.y + t.h - 42, t.w - 40);
+      }
+      ctx.restore();
+      ctx.strokeStyle = 'rgba(33,31,28,0.12)'; ctx.lineWidth = 2;
+      roundRectPath(ctx, t.x, t.y, t.w, t.h, 22); ctx.stroke();
+    });
+    return { dataUrl: canvas.toDataURL('image/jpeg', 0.86), tiles: tiles };
+  }
+  async function createOutfitFromItems(ids){
+    var items = ids.map(function(id){ return data.items.find(function(i){ return i.id === id; }); }).filter(Boolean);
+    if (items.length < 2) return;
+    var btn = document.getElementById('createOutfitBtn');
+    if (btn){ btn.disabled = true; btn.textContent = 'Creating\u2026'; }
+    var result = null;
+    try { result = await renderOutfitImage(items); } catch(e){ console.error(e); }
+    if (!result || !result.dataUrl){
+      alert('Couldn\'t create the outfit on this device.');
+      if (btn){ btn.disabled = false; btn.textContent = 'Create outfit'; }
+      return;
+    }
+    var photo = {
+      id: uid(), dataUrl: result.dataUrl, scenarioIds: [], seasons: [], addedAt: Date.now(), kind: 'outfit', itemId: null,
+      tags: result.tiles.map(function(t){ return { id: uid(), itemId: t.item.id, x: (t.x + t.w / 2) / OUTFIT_W * 100, y: (t.y + t.h / 2) / OUTFIT_H * 100 }; })
+    };
+    data.photos.unshift(photo);
+    data.photos.sort(function(a, b){ return (b.addedAt || 0) - (a.addedAt || 0); });
+    savePhoto(photo);
+    selectedItemIds = [];
+    wardrobeMode = 'outfits';
+    showTab('wardrobe');
+    flickable = false;
+    openDetail(photo.id);   // straight into the new outfit, so it can be tagged or given a season
   }
 
   function hostnameOf(url){
@@ -2909,6 +3063,7 @@
   var accountName = document.getElementById('accountName');
   var syncStatusEl = document.getElementById('syncStatus');
   var reconnectBtn = document.getElementById('reconnectBtn');
+  var syncWhyBtn = document.getElementById('syncWhyBtn');
   var signInBtn = document.getElementById('signInBtn');
   var signOutBtn = document.getElementById('signOutBtn');
 
@@ -2966,12 +3121,13 @@
       if (syncState === 'syncing') text = syncDetail ? 'Syncing — ' + syncDetail : 'Syncing…';
       else if (syncState === 'ok') text = driveQuotaWarning ? 'Saved to Drive ✓ — ' + driveQuotaWarning : 'Saved to Drive ✓';
       else if (syncState === 'full'){ text = 'Google Drive is full — free up space, then tap Retry'; showReconnect = true; reconnectLabel = 'Retry'; }
-      else if (syncState === 'error'){ text = 'Sync problem'; showReconnect = true; reconnectLabel = 'Retry'; }
+      else if (syncState === 'error'){ text = lastSyncError && lastSyncError.retry ? 'Sync problem \u2014 retrying\u2026' : 'Sync problem'; showReconnect = true; reconnectLabel = 'Retry'; }
       else if (syncState === 'paused' || !getToken()){ text = 'Sync paused'; showReconnect = true; }
     }
     syncStatusEl.textContent = text;
     reconnectBtn.textContent = reconnectLabel;
     reconnectBtn.style.display = showReconnect ? '' : 'none';
+    syncWhyBtn.style.display = (signedIn && syncState === 'error' && lastSyncError) ? '' : 'none';
   }
 
   // Sign-in uses Google's redirect flow: leave for Google, come straight back with a token in the URL.
@@ -3010,7 +3166,14 @@
     startSignIn();
   });
   reconnectBtn.addEventListener('click', function(){
-    if ((syncState === 'error' || syncState === 'full') && getToken()) runSync(); else startSignIn();
+    if ((syncState === 'error' || syncState === 'full') && getToken()){ retryCount = 0; runSync(); } else startSignIn();
+  });
+  syncWhyBtn.addEventListener('click', function(){
+    if (lastSyncError) alert(lastSyncError.help + (lastSyncError.tech ? '\n\n(' + lastSyncError.tech + ')' : ''));
+  });
+  // Phones drop in and out of signal: sync again the moment the connection comes back.
+  window.addEventListener('online', function(){
+    if (DRIVE_ENABLED && localStorage.getItem(SIGNED_KEY)){ retryCount = 0; runSync(); }
   });
   signInBtn.addEventListener('click', startSignIn);
   document.getElementById('skipSignIn').addEventListener('click', function(){
